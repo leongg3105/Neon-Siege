@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Multiverse Survival</title>
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+    <main>
+
+        <!-- MENÚ PRINCIPAL -->
+        <section id="menu">
+
+            <h1>MULTIVERSE SURVIVAL</h1>
+
+            <p>
+                Elige a tu personaje y sobrevive a las oleadas del multiverso.
+            </p>
+
+            <button id="btnJugar">
+                JUGAR
+            </button>
+
+        </section>
+
+
+        <!-- SELECCIÓN DE PERSONAJE -->
+        <section id="seleccion" class="oculto">
+
+            <h2>Selecciona tu personaje</h2>
+
+            <div class="personajes">
+
+                <button class="personaje" data-personaje="miku">
+
+                    <h3>MIKU</h3>
+
+                    <p>❤️ Vida: 100</p>
+                    <p>⚡ Velocidad: Alta</p>
+                    <p>🎵 Daño: 12</p>
+
+                </button>
+
+
+                <button class="personaje" data-personaje="teto">
+
+                    <h3>TETO</h3>
+
+                    <p>❤️ Vida: 120</p>
+                    <p>⚡ Velocidad: Media</p>
+                    <p>🎵 Daño: 15</p>
+
+                </button>
+
+
+                <button class="personaje" data-personaje="ado">
+
+                    <h3>ADO</h3>
+
+                    <p>❤️ Vida: 90</p>
+                    <p>⚡ Velocidad: Muy alta</p>
+                    <p>🎵 Daño: 20</p>
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- JUEGO -->
+        <section id="juego" class="oculto">
+
+            <div id="hud">
+
+                <span>
+                    Personaje:
+                    <strong id="hudPersonaje"></strong>
+                </span>
+
+                <span>
+                    ❤️ Vida:
+                    <strong id="hudVida"></strong>
+                </span>
+
+                <span>
+                    ⭐ Puntos:
+                    <strong id="hudPuntos">0</strong>
+                </span>
+
+            </div>
+
+            <canvas
+                id="canvas"
+                width="960"
+                height="540">
+            </canvas>
+
+            <p class="controles">
+                WASD / Flechas = mover · Mouse = apuntar · Clic = disparar
+            </p>
+
+        </section>
+
+
+        <!-- GAME OVER -->
+        <section id="gameOver" class="oculto">
+
+            <h2>GAME OVER</h2>
+
+            <p>
+                Puntuación:
+                <strong id="puntosFinales">0</strong>
+            </p>
+
+            <button id="btnReiniciar">
+                VOLVER AL MENÚ
+            </button>
+
+        </section>
+
+    </main>
+
+
+    <script src="js/main.js"></script>
+
+</body>
+
+</html>
