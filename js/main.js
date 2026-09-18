@@ -6,6 +6,7 @@ const menu = document.getElementById("menu");
 const seleccion = document.getElementById("seleccion");
 const juego = document.getElementById("juego");
 const gameOver = document.getElementById("gameOver");
+const pausaOverlay = document.getElementById("pausaOverlay");
 
 const btnJugar = document.getElementById("btnJugar");
 const btnReiniciar = document.getElementById("btnReiniciar");
@@ -79,6 +80,8 @@ let puntos = 0;
 let ultimoDisparo = 0;
 
 let juegoActivo = false;
+
+let juegoPausado = false;
 
 let ultimoSpawn = 0;
 
@@ -163,7 +166,8 @@ function iniciarJuego(personajeElegido) {
     hudPuntos.textContent =
         puntos;
 
-    juegoActivo = true;
+        juegoPausado = false;
+        juegoActivo = true;
 
     requestAnimationFrame(gameLoop);
 
@@ -176,7 +180,23 @@ function iniciarJuego(personajeElegido) {
 
 document.addEventListener("keydown", function (evento) {
 
-    teclas[evento.key.toLowerCase()] = true;
+    const tecla = evento.key.toLowerCase();
+
+    teclas[tecla] = true;
+
+    if (
+        (tecla === "p" || tecla === "escape")
+        &&
+        juegoActivo
+        &&
+        !evento.repeat
+    ) {
+
+        juegoPausado = !juegoPausado;
+
+        pausaOverlay.classList.toggle("oculto", !juegoPausado);
+
+    }
 
 });
 
@@ -221,9 +241,9 @@ canvas.addEventListener("click", function () {
 
 function disparar() {
 
-    if (!juegoActivo) {
-        return;
-    }
+if (!juegoActivo || juegoPausado) {
+    return;
+}
 
     const ahora =
         Date.now();
@@ -760,7 +780,6 @@ function gameLoop(tiempo) {
         return;
     }
 
-
     ctx.clearRect(
         0,
         0,
@@ -768,38 +787,36 @@ function gameLoop(tiempo) {
         canvas.height
     );
 
+    if (!juegoPausado) {
 
-    // Crear enemigo cada cierto tiempo
+        if (
+            tiempo - ultimoSpawn
+            >
+            1300
+        ) {
 
-    if (
-        tiempo - ultimoSpawn
-        >
-        1300
-    ) {
+            crearEnemigo();
 
-        crearEnemigo();
+            ultimoSpawn =
+                tiempo;
 
-        ultimoSpawn =
-            tiempo;
+        }
+
+        moverJugador();
+
+        moverProyectiles();
+
+        moverEnemigos();
+
+        revisarColisiones();
 
     }
-
-
-    moverJugador();
-
-    moverProyectiles();
-
-    moverEnemigos();
-
-    revisarColisiones();
-
 
     dibujarJugador();
 
     dibujarProyectiles();
 
     dibujarEnemigos();
-
 
     requestAnimationFrame(
         gameLoop
