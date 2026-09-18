@@ -5,8 +5,8 @@ CSS3, JavaScript, Canvas y Node.js.
 
 ## Integrantes
 
-- Integrante 1
-- Integrante 2
+- Angel de Aquino Aaron
+- Delgado Hernandes Leonardo Miguel
 
 ## Tecnologías
 
