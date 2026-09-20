@@ -168,3 +168,169 @@ canvas {
 .botonesPausa button:hover {
     transform: scale(1.05);
 }
+
+#tiendaOverlay {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background: rgba(0, 0, 0, 0.82);
+
+    z-index: 1200;
+
+    justify-content: center;
+    align-items: center;
+}
+
+#tiendaOverlay:not(.oculto) {
+    display: flex;
+}
+
+.tiendaVentana {
+    width: 900px;
+    max-width: 92%;
+
+    background: linear-gradient(
+        180deg,
+        #3b3d31 0%,
+        #2a2c24 100%
+    );
+
+    border: 2px solid #6c715a;
+    border-radius: 10px;
+
+    padding: 25px;
+
+    color: white;
+
+    position: relative;
+    overflow: hidden;
+}
+
+.tiendaVentana::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    background-image:
+        linear-gradient(
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px
+        );
+
+    background-size: 44px 44px;
+
+    opacity: 0.35;
+
+    pointer-events: none;
+}
+
+.tiendaVentana h2,
+.subtituloTienda,
+.tiendaOpciones,
+.tiendaAcciones {
+    position: relative;
+    z-index: 1;
+}
+
+.tiendaVentana h2 {
+    margin: 0 0 10px;
+
+    font-size: 36px;
+}
+
+.subtituloTienda {
+    margin: 0 0 20px;
+
+    color: #d2d6c4;
+}
+
+.tiendaOpciones {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 18px;
+}
+
+.opcionTienda {
+    background: rgba(18, 19, 15, 0.88);
+
+    border: 1px solid #7b8164;
+    border-radius: 10px;
+
+    padding: 18px;
+
+    min-height: 220px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.opcionTienda h3 {
+    margin: 0 0 10px;
+
+    font-size: 22px;
+}
+
+.opcionTienda p {
+    margin: 0 0 14px;
+
+    color: #d7dbc8;
+
+    line-height: 1.4;
+}
+
+.opcionTienda button {
+    padding: 12px 18px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #d6d6d6;
+    color: black;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.opcionTienda button:disabled {
+    opacity: 0.55;
+
+    cursor: not-allowed;
+}
+
+.tiendaAcciones {
+    margin-top: 22px;
+
+    display: flex;
+
+    justify-content: flex-end;
+}
+
+#btnCerrarTienda {
+    padding: 14px 26px;
+
+    border: none;
+    border-radius: 8px;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}

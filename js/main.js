@@ -6,7 +6,12 @@ const menu = document.getElementById("menu");
 const seleccion = document.getElementById("seleccion");
 const juego = document.getElementById("juego");
 const gameOver = document.getElementById("gameOver");
+
 const pausaOverlay = document.getElementById("pausaOverlay");
+
+const tiendaOverlay = document.getElementById("tiendaOverlay");
+const tiendaOpciones = document.getElementById("tiendaOpciones");
+const btnCerrarTienda = document.getElementById("btnCerrarTienda");
 
 const btnJugar = document.getElementById("btnJugar");
 const btnReiniciar = document.getElementById("btnReiniciar");
@@ -96,6 +101,12 @@ let inicioEsperaOleada = 0;
 
 let intervaloSpawn = 1300;
 let finMensajeOleada = 0;
+
+let tiendaActiva = false;
+
+let mejoraTomadaEnTienda = false;
+
+let mejorasActualesTienda = [];
 
 let juegoActivo = false;
 
@@ -203,6 +214,12 @@ function iniciarJuego(personajeElegido) {
     juegoPausado = false;
     pausaOverlay.classList.add("oculto");
 
+    tiendaActiva = false;
+mejoraTomadaEnTienda = false;
+mejorasActualesTienda = [];
+
+tiendaOverlay.classList.add("oculto");
+
     juegoActivo = true;
 
     requestAnimationFrame(gameLoop);
@@ -221,12 +238,11 @@ document.addEventListener("keydown", function (evento) {
     teclas[tecla] = true;
 
     if (
-        (tecla === "p" || tecla === "escape")
-        &&
-        juegoActivo
-        &&
-        !evento.repeat
-    ) {
+    (tecla === "p" || tecla === "escape")
+    && juegoActivo
+    && !tiendaActiva
+    && !evento.repeat
+) {
 
         juegoPausado = !juegoPausado;
 
@@ -853,6 +869,59 @@ function dibujarMensajeOleada(tiempo) {
 
 }
 
+function abrirTienda() {
+
+    tiendaActiva = true;
+    juegoPausado = true;
+
+    teclas = {};
+
+    tiendaOverlay.classList.remove("oculto");
+
+}
+
+
+function cerrarTienda() {
+
+    tiendaActiva = false;
+    juegoPausado = false;
+
+    tiendaOverlay.classList.add("oculto");
+
+    avanzarOleada(performance.now());
+
+}
+
+function avanzarOleada(tiempoActual) {
+
+    oleada++;
+
+    enemigosGenerados = 0;
+    enemigosEliminadosOleada = 0;
+
+    enemigosPorOleada += 2;
+
+    intervaloSpawn =
+        Math.max(
+            700,
+            intervaloSpawn - 75
+        );
+
+    hudOleada.textContent =
+        oleada;
+
+    hudEnemigos.textContent =
+        enemigosPorOleada;
+
+    esperandoOleada = false;
+
+    ultimoSpawn =
+        tiempoActual;
+
+    finMensajeOleada =
+        tiempoActual + 1500;
+
+}
 
 // ===============================
 // GAME LOOP
@@ -921,38 +990,23 @@ function gameLoop(tiempo) {
         // COMENZAR SIGUIENTE OLEADA
 
         if (
-            esperandoOleada
-            &&
-            tiempo - inicioEsperaOleada >= 2000
-        ) {
+    esperandoOleada
+    &&
+    tiempo - inicioEsperaOleada >= 2000
+) {
 
-            oleada++;
+    if (oleada % 2 === 0) {
 
-            enemigosGenerados = 0;
-            enemigosEliminadosOleada = 0;
+        esperandoOleada = false;
 
-            enemigosPorOleada += 2;
+        abrirTienda();
 
-            intervaloSpawn =
-                Math.max(
-                    700,
-                    intervaloSpawn - 75
-                );
+    } else {
 
-            hudOleada.textContent =
-                oleada;
+        avanzarOleada(tiempo);
 
-            hudEnemigos.textContent =
-                enemigosPorOleada;
-
-            esperandoOleada = false;
-
-            ultimoSpawn = tiempo;
-
-            finMensajeOleada =
-                tiempo + 1500;
-
-        }
+    }
+}
 
     }
 
@@ -1031,6 +1085,11 @@ btnContinuar.addEventListener("click", function () {
 
 });
 
+btnCerrarTienda.addEventListener("click", function () {
+
+    cerrarTienda();
+
+});
 
 btnMenuPausa.addEventListener("click", function () {
 
