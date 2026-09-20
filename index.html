@@ -90,6 +90,16 @@
                 </span>
 
                 <span>
+                    🌊 Oleada:
+                     <strong id="hudOleada">1</strong>
+                 </span>
+
+                 <span>
+                    👾 Restantes:
+                    <strong id="hudEnemigos">5</strong>
+                </span>
+
+                <span>
                     ⭐ Puntos:
                     <strong id="hudPuntos">0</strong>
                 </span>
@@ -103,9 +113,24 @@
             </canvas>
 
             <div id="pausaOverlay" class="oculto">
-             <h2>PAUSA</h2>
-            <p>Presiona P o Esc para continuar</p>
-            </div>
+
+    <h2>PAUSA</h2>
+
+    <p>Presiona P o Esc para continuar</p>
+
+    <div class="botonesPausa">
+
+        <button id="btnContinuar">
+            CONTINUAR
+        </button>
+
+        <button id="btnMenuPausa">
+            VOLVER AL MENÚ
+        </button>
+
+    </div>
+
+</div>
             
             <p class="controles">
                 WASD / Flechas = mover · Mouse = apuntar · Clic = disparar
@@ -125,8 +150,12 @@
             </p>
 
             <button id="btnReiniciar">
-                VOLVER AL MENÚ
-            </button>
+        REINTENTAR
+        </button>
+
+            <button id="btnMenu">
+        VOLVER AL MENÚ
+        </button>
 
         </section>
 

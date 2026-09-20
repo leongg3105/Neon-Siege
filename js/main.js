@@ -10,12 +10,17 @@ const pausaOverlay = document.getElementById("pausaOverlay");
 
 const btnJugar = document.getElementById("btnJugar");
 const btnReiniciar = document.getElementById("btnReiniciar");
+const btnMenu = document.getElementById("btnMenu");
+const btnContinuar = document.getElementById("btnContinuar");
+const btnMenuPausa = document.getElementById("btnMenuPausa");
 
 const botonesPersonaje = document.querySelectorAll(".personaje");
 
 const hudPersonaje = document.getElementById("hudPersonaje");
 const hudVida = document.getElementById("hudVida");
 const hudPuntos = document.getElementById("hudPuntos");
+const hudOleada = document.getElementById("hudOleada");
+const hudEnemigos = document.getElementById("hudEnemigos");
 
 const puntosFinales = document.getElementById("puntosFinales");
 
@@ -67,6 +72,7 @@ let jugador;
 
 let proyectiles = [];
 let enemigos = [];
+let personajeActual = null;
 
 let teclas = {};
 
@@ -78,6 +84,18 @@ let mouse = {
 let puntos = 0;
 
 let ultimoDisparo = 0;
+
+let oleada = 1;
+
+let enemigosGenerados = 0;
+let enemigosPorOleada = 5;
+let enemigosEliminadosOleada = 0;
+
+let esperandoOleada = false;
+let inicioEsperaOleada = 0;
+
+let intervaloSpawn = 1300;
+let finMensajeOleada = 0;
 
 let juegoActivo = false;
 
@@ -122,6 +140,8 @@ botonesPersonaje.forEach(function (boton) {
 
 function iniciarJuego(personajeElegido) {
 
+    personajeActual = personajeElegido;
+
     seleccion.classList.add("oculto");
     juego.classList.remove("oculto");
     gameOver.classList.add("oculto");
@@ -155,6 +175,14 @@ function iniciarJuego(personajeElegido) {
 
     puntos = 0;
 
+    oleada = 1;
+    enemigosGenerados = 0;
+    enemigosPorOleada = 5;
+    enemigosEliminadosOleada = 0;
+
+    esperandoOleada = false;
+    intervaloSpawn = 1300;
+
     ultimoSpawn = 0;
 
     hudPersonaje.textContent =
@@ -163,11 +191,19 @@ function iniciarJuego(personajeElegido) {
     hudVida.textContent =
         jugador.vida;
 
+    hudOleada.textContent =
+        oleada;
+
+    hudEnemigos.textContent =
+        enemigosPorOleada - enemigosEliminadosOleada;
+
     hudPuntos.textContent =
         puntos;
 
-        juegoPausado = false;
-        juegoActivo = true;
+    juegoPausado = false;
+    pausaOverlay.classList.add("oculto");
+
+    juegoActivo = true;
 
     requestAnimationFrame(gameLoop);
 
@@ -582,22 +618,25 @@ function revisarColisiones() {
 
 
                 if (
-                    enemigo.vida <= 0
-                ) {
+    enemigo.vida <= 0
+) {
 
-                    enemigos.splice(
-                        j,
-                        1
-                    );
+    enemigos.splice(
+        j,
+        1
+    );
 
+    enemigosEliminadosOleada++;
 
-                    puntos += 100;
+    hudEnemigos.textContent =
+        enemigosPorOleada - enemigosEliminadosOleada;
 
+    puntos += 100;
 
-                    hudPuntos.textContent =
-                        puntos;
+    hudPuntos.textContent =
+        puntos;
 
-                }
+}
 
 
                 break;
@@ -769,6 +808,51 @@ function dibujarEnemigos() {
 
 }
 
+// ===============================
+// MENSAJE DE OLEADA
+// ===============================
+
+function dibujarMensajeOleada(tiempo) {
+
+    let texto = "";
+
+    if (esperandoOleada) {
+
+        texto = "OLEADA COMPLETADA";
+
+    } else if (tiempo < finMensajeOleada) {
+
+        texto = "OLEADA " + oleada;
+
+    }
+
+    if (texto === "") {
+        return;
+    }
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+
+    ctx.fillRect(
+        canvas.width / 2 - 230,
+        canvas.height / 2 - 60,
+        460,
+        120
+    );
+
+    ctx.fillStyle = "white";
+
+    ctx.font = "bold 38px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(
+        texto,
+        canvas.width / 2,
+        canvas.height / 2
+    );
+
+}
+
 
 // ===============================
 // GAME LOOP
@@ -789,18 +873,24 @@ function gameLoop(tiempo) {
 
     if (!juegoPausado) {
 
+        // GENERAR ENEMIGOS
+
         if (
-            tiempo - ultimoSpawn
-            >
-            1300
+            !esperandoOleada
+            &&
+            enemigosGenerados < enemigosPorOleada
+            &&
+            tiempo - ultimoSpawn > intervaloSpawn
         ) {
 
             crearEnemigo();
 
-            ultimoSpawn =
-                tiempo;
+            enemigosGenerados++;
+
+            ultimoSpawn = tiempo;
 
         }
+
 
         moverJugador();
 
@@ -810,13 +900,71 @@ function gameLoop(tiempo) {
 
         revisarColisiones();
 
+
+        // COMPROBAR SI TERMINÓ LA OLEADA
+
+        if (
+            enemigosGenerados >= enemigosPorOleada
+            &&
+            enemigos.length === 0
+            &&
+            !esperandoOleada
+        ) {
+
+            esperandoOleada = true;
+
+            inicioEsperaOleada = tiempo;
+
+        }
+
+
+        // COMENZAR SIGUIENTE OLEADA
+
+        if (
+            esperandoOleada
+            &&
+            tiempo - inicioEsperaOleada >= 2000
+        ) {
+
+            oleada++;
+
+            enemigosGenerados = 0;
+            enemigosEliminadosOleada = 0;
+
+            enemigosPorOleada += 2;
+
+            intervaloSpawn =
+                Math.max(
+                    700,
+                    intervaloSpawn - 75
+                );
+
+            hudOleada.textContent =
+                oleada;
+
+            hudEnemigos.textContent =
+                enemigosPorOleada;
+
+            esperandoOleada = false;
+
+            ultimoSpawn = tiempo;
+
+            finMensajeOleada =
+                tiempo + 1500;
+
+        }
+
     }
+
 
     dibujarJugador();
 
     dibujarProyectiles();
 
     dibujarEnemigos();
+
+    dibujarMensajeOleada(tiempo);
+
 
     requestAnimationFrame(
         gameLoop
@@ -852,17 +1000,50 @@ function terminarJuego() {
 // REGRESAR AL MENÚ
 // ===============================
 
-btnReiniciar.addEventListener(
-    "click",
-    function () {
+btnReiniciar.addEventListener("click", function () {
 
-        gameOver.classList.add(
-            "oculto"
-        );
-
-        menu.classList.remove(
-            "oculto"
-        );
-
+    if (personajeActual) {
+        iniciarJuego(personajeActual);
     }
-);
+
+});
+
+
+btnMenu.addEventListener("click", function () {
+
+    juegoActivo = false;
+    juegoPausado = false;
+
+    teclas = {};
+
+    pausaOverlay.classList.add("oculto");
+    gameOver.classList.add("oculto");
+    juego.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});
+btnContinuar.addEventListener("click", function () {
+
+    juegoPausado = false;
+
+    pausaOverlay.classList.add("oculto");
+
+});
+
+
+btnMenuPausa.addEventListener("click", function () {
+
+    juegoActivo = false;
+    juegoPausado = false;
+
+    teclas = {};
+
+    pausaOverlay.classList.add("oculto");
+    juego.classList.add("oculto");
+    gameOver.classList.add("oculto");
+    seleccion.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});
