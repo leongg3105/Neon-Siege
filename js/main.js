@@ -4,8 +4,19 @@
 
 const menu = document.getElementById("menu");
 const seleccion = document.getElementById("seleccion");
+const btnVolverSeleccion =
+    document.getElementById("btnVolverSeleccion");
 const juego = document.getElementById("juego");
 const gameOver = document.getElementById("gameOver");
+const codex = document.getElementById("codex");
+
+const btnCodex = document.getElementById("btnCodex");
+const btnVolverCodex = document.getElementById("btnVolverCodex");
+
+const creditos = document.getElementById("creditos");
+
+const btnCreditos = document.getElementById("btnCreditos");
+const btnVolverCreditos = document.getElementById("btnVolverCreditos");
 
 const pausaOverlay = document.getElementById("pausaOverlay");
 
@@ -126,6 +137,40 @@ btnJugar.addEventListener("click", function () {
 
 });
 
+btnCodex.addEventListener("click", function () {
+
+    menu.classList.add("oculto");
+
+    codex.classList.remove("oculto");
+
+});
+
+
+btnVolverCodex.addEventListener("click", function () {
+
+    codex.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});
+
+btnCreditos.addEventListener("click", function () {
+
+    menu.classList.add("oculto");
+
+    creditos.classList.remove("oculto");
+
+});
+
+
+btnVolverCreditos.addEventListener("click", function () {
+
+    creditos.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});
+
 
 // ===============================
 // SELECCIONAR PERSONAJE
@@ -141,6 +186,14 @@ botonesPersonaje.forEach(function (boton) {
         iniciarJuego(personajeElegido);
 
     });
+
+});
+
+btnVolverSeleccion.addEventListener("click", function () {
+
+    seleccion.classList.add("oculto");
+
+    menu.classList.remove("oculto");
 
 });
 
