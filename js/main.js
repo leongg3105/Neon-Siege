@@ -4,18 +4,39 @@
 
 const menu = document.getElementById("menu");
 const seleccion = document.getElementById("seleccion");
+const btnVolverSeleccion =
+    document.getElementById("btnVolverSeleccion");
 const juego = document.getElementById("juego");
 const gameOver = document.getElementById("gameOver");
+const codex = document.getElementById("codex");
+
+const btnCodex = document.getElementById("btnCodex");
+const btnVolverCodex = document.getElementById("btnVolverCodex");
+
+const creditos = document.getElementById("creditos");
+
+const btnCreditos = document.getElementById("btnCreditos");
+const btnVolverCreditos = document.getElementById("btnVolverCreditos");
+
 const pausaOverlay = document.getElementById("pausaOverlay");
+
+const tiendaOverlay = document.getElementById("tiendaOverlay");
+const tiendaOpciones = document.getElementById("tiendaOpciones");
+const btnCerrarTienda = document.getElementById("btnCerrarTienda");
 
 const btnJugar = document.getElementById("btnJugar");
 const btnReiniciar = document.getElementById("btnReiniciar");
+const btnMenu = document.getElementById("btnMenu");
+const btnContinuar = document.getElementById("btnContinuar");
+const btnMenuPausa = document.getElementById("btnMenuPausa");
 
 const botonesPersonaje = document.querySelectorAll(".personaje");
 
 const hudPersonaje = document.getElementById("hudPersonaje");
 const hudVida = document.getElementById("hudVida");
 const hudPuntos = document.getElementById("hudPuntos");
+const hudOleada = document.getElementById("hudOleada");
+const hudEnemigos = document.getElementById("hudEnemigos");
 
 const puntosFinales = document.getElementById("puntosFinales");
 
@@ -67,6 +88,7 @@ let jugador;
 
 let proyectiles = [];
 let enemigos = [];
+let personajeActual = null;
 
 let teclas = {};
 
@@ -78,6 +100,24 @@ let mouse = {
 let puntos = 0;
 
 let ultimoDisparo = 0;
+
+let oleada = 1;
+
+let enemigosGenerados = 0;
+let enemigosPorOleada = 5;
+let enemigosEliminadosOleada = 0;
+
+let esperandoOleada = false;
+let inicioEsperaOleada = 0;
+
+let intervaloSpawn = 1300;
+let finMensajeOleada = 0;
+
+let tiendaActiva = false;
+
+let mejoraTomadaEnTienda = false;
+
+let mejorasActualesTienda = [];
 
 let juegoActivo = false;
 
@@ -94,6 +134,40 @@ btnJugar.addEventListener("click", function () {
 
     menu.classList.add("oculto");
     seleccion.classList.remove("oculto");
+
+});
+
+btnCodex.addEventListener("click", function () {
+
+    menu.classList.add("oculto");
+
+    codex.classList.remove("oculto");
+
+});
+
+
+btnVolverCodex.addEventListener("click", function () {
+
+    codex.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});
+
+btnCreditos.addEventListener("click", function () {
+
+    menu.classList.add("oculto");
+
+    creditos.classList.remove("oculto");
+
+});
+
+
+btnVolverCreditos.addEventListener("click", function () {
+
+    creditos.classList.add("oculto");
+
+    menu.classList.remove("oculto");
 
 });
 
@@ -115,12 +189,22 @@ botonesPersonaje.forEach(function (boton) {
 
 });
 
+btnVolverSeleccion.addEventListener("click", function () {
+
+    seleccion.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});
+
 
 // ===============================
 // INICIAR JUEGO
 // ===============================
 
 function iniciarJuego(personajeElegido) {
+
+    personajeActual = personajeElegido;
 
     seleccion.classList.add("oculto");
     juego.classList.remove("oculto");
@@ -155,6 +239,14 @@ function iniciarJuego(personajeElegido) {
 
     puntos = 0;
 
+    oleada = 1;
+    enemigosGenerados = 0;
+    enemigosPorOleada = 5;
+    enemigosEliminadosOleada = 0;
+
+    esperandoOleada = false;
+    intervaloSpawn = 1300;
+
     ultimoSpawn = 0;
 
     hudPersonaje.textContent =
@@ -163,11 +255,25 @@ function iniciarJuego(personajeElegido) {
     hudVida.textContent =
         jugador.vida;
 
+    hudOleada.textContent =
+        oleada;
+
+    hudEnemigos.textContent =
+        enemigosPorOleada - enemigosEliminadosOleada;
+
     hudPuntos.textContent =
         puntos;
 
-        juegoPausado = false;
-        juegoActivo = true;
+    juegoPausado = false;
+    pausaOverlay.classList.add("oculto");
+
+    tiendaActiva = false;
+mejoraTomadaEnTienda = false;
+mejorasActualesTienda = [];
+
+tiendaOverlay.classList.add("oculto");
+
+    juegoActivo = true;
 
     requestAnimationFrame(gameLoop);
 
@@ -185,12 +291,11 @@ document.addEventListener("keydown", function (evento) {
     teclas[tecla] = true;
 
     if (
-        (tecla === "p" || tecla === "escape")
-        &&
-        juegoActivo
-        &&
-        !evento.repeat
-    ) {
+    (tecla === "p" || tecla === "escape")
+    && juegoActivo
+    && !tiendaActiva
+    && !evento.repeat
+) {
 
         juegoPausado = !juegoPausado;
 
@@ -582,22 +687,25 @@ function revisarColisiones() {
 
 
                 if (
-                    enemigo.vida <= 0
-                ) {
+    enemigo.vida <= 0
+) {
 
-                    enemigos.splice(
-                        j,
-                        1
-                    );
+    enemigos.splice(
+        j,
+        1
+    );
 
+    enemigosEliminadosOleada++;
 
-                    puntos += 100;
+    hudEnemigos.textContent =
+        enemigosPorOleada - enemigosEliminadosOleada;
 
+    puntos += 100;
 
-                    hudPuntos.textContent =
-                        puntos;
+    hudPuntos.textContent =
+        puntos;
 
-                }
+}
 
 
                 break;
@@ -769,6 +877,104 @@ function dibujarEnemigos() {
 
 }
 
+// ===============================
+// MENSAJE DE OLEADA
+// ===============================
+
+function dibujarMensajeOleada(tiempo) {
+
+    let texto = "";
+
+    if (esperandoOleada) {
+
+        texto = "OLEADA COMPLETADA";
+
+    } else if (tiempo < finMensajeOleada) {
+
+        texto = "OLEADA " + oleada;
+
+    }
+
+    if (texto === "") {
+        return;
+    }
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+
+    ctx.fillRect(
+        canvas.width / 2 - 230,
+        canvas.height / 2 - 60,
+        460,
+        120
+    );
+
+    ctx.fillStyle = "white";
+
+    ctx.font = "bold 38px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(
+        texto,
+        canvas.width / 2,
+        canvas.height / 2
+    );
+
+}
+
+function abrirTienda() {
+
+    tiendaActiva = true;
+    juegoPausado = true;
+
+    teclas = {};
+
+    tiendaOverlay.classList.remove("oculto");
+
+}
+
+
+function cerrarTienda() {
+
+    tiendaActiva = false;
+    juegoPausado = false;
+
+    tiendaOverlay.classList.add("oculto");
+
+    avanzarOleada(performance.now());
+
+}
+
+function avanzarOleada(tiempoActual) {
+
+    oleada++;
+
+    enemigosGenerados = 0;
+    enemigosEliminadosOleada = 0;
+
+    enemigosPorOleada += 2;
+
+    intervaloSpawn =
+        Math.max(
+            700,
+            intervaloSpawn - 75
+        );
+
+    hudOleada.textContent =
+        oleada;
+
+    hudEnemigos.textContent =
+        enemigosPorOleada;
+
+    esperandoOleada = false;
+
+    ultimoSpawn =
+        tiempoActual;
+
+    finMensajeOleada =
+        tiempoActual + 1500;
+
+}
 
 // ===============================
 // GAME LOOP
@@ -789,18 +995,24 @@ function gameLoop(tiempo) {
 
     if (!juegoPausado) {
 
+        // GENERAR ENEMIGOS
+
         if (
-            tiempo - ultimoSpawn
-            >
-            1300
+            !esperandoOleada
+            &&
+            enemigosGenerados < enemigosPorOleada
+            &&
+            tiempo - ultimoSpawn > intervaloSpawn
         ) {
 
             crearEnemigo();
 
-            ultimoSpawn =
-                tiempo;
+            enemigosGenerados++;
+
+            ultimoSpawn = tiempo;
 
         }
+
 
         moverJugador();
 
@@ -810,13 +1022,56 @@ function gameLoop(tiempo) {
 
         revisarColisiones();
 
+
+        // COMPROBAR SI TERMINÓ LA OLEADA
+
+        if (
+            enemigosGenerados >= enemigosPorOleada
+            &&
+            enemigos.length === 0
+            &&
+            !esperandoOleada
+        ) {
+
+            esperandoOleada = true;
+
+            inicioEsperaOleada = tiempo;
+
+        }
+
+
+        // COMENZAR SIGUIENTE OLEADA
+
+        if (
+    esperandoOleada
+    &&
+    tiempo - inicioEsperaOleada >= 2000
+) {
+
+    if (oleada % 2 === 0) {
+
+        esperandoOleada = false;
+
+        abrirTienda();
+
+    } else {
+
+        avanzarOleada(tiempo);
+
     }
+}
+
+    }
+
 
     dibujarJugador();
 
     dibujarProyectiles();
 
     dibujarEnemigos();
+
+    dibujarMensajeOleada(tiempo);
+
 
     requestAnimationFrame(
         gameLoop
@@ -852,17 +1107,55 @@ function terminarJuego() {
 // REGRESAR AL MENÚ
 // ===============================
 
-btnReiniciar.addEventListener(
-    "click",
-    function () {
+btnReiniciar.addEventListener("click", function () {
 
-        gameOver.classList.add(
-            "oculto"
-        );
-
-        menu.classList.remove(
-            "oculto"
-        );
-
+    if (personajeActual) {
+        iniciarJuego(personajeActual);
     }
-);
+
+});
+
+
+btnMenu.addEventListener("click", function () {
+
+    juegoActivo = false;
+    juegoPausado = false;
+
+    teclas = {};
+
+    pausaOverlay.classList.add("oculto");
+    gameOver.classList.add("oculto");
+    juego.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});
+btnContinuar.addEventListener("click", function () {
+
+    juegoPausado = false;
+
+    pausaOverlay.classList.add("oculto");
+
+});
+
+btnCerrarTienda.addEventListener("click", function () {
+
+    cerrarTienda();
+
+});
+
+btnMenuPausa.addEventListener("click", function () {
+
+    juegoActivo = false;
+    juegoPausado = false;
+
+    teclas = {};
+
+    pausaOverlay.classList.add("oculto");
+    juego.classList.add("oculto");
+    gameOver.classList.add("oculto");
+    seleccion.classList.add("oculto");
+
+    menu.classList.remove("oculto");
+
+});

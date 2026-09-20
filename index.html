@@ -23,55 +23,199 @@
                 Elige a tu personaje y sobrevive a las oleadas del multiverso.
             </p>
 
-            <button id="btnJugar">
-                JUGAR
-            </button>
+            <div class="menuBotones">
+
+    <button id="btnJugar">
+        JUGAR
+    </button>
+
+    <button id="btnCodex">
+        CODEX
+    </button>
+
+    <button id="btnCreditos">
+        CRÉDITOS
+    </button>
+
+</div>
 
         </section>
+
+        <section id="codex" class="oculto">
+
+    <div class="codexContenido">
+
+        <h2>CODEX</h2>
+
+        <p class="codexSubtitulo">
+            Registro de enemigos, jefes, armas y objetos descubiertos.
+        </p>
+
+        <div class="codexCategorias">
+
+            <button class="codexCategoria">
+                ENEMIGOS
+            </button>
+
+            <button class="codexCategoria">
+                JEFES
+            </button>
+
+            <button class="codexCategoria">
+                ARMAS
+            </button>
+
+            <button class="codexCategoria">
+                OBJETOS
+            </button>
+
+        </div>
+
+        <div class="codexPanel">
+
+            <p>
+                Todavía no hay registros disponibles.
+            </p>
+
+        </div>
+
+        <button id="btnVolverCodex">
+            VOLVER
+        </button>
+
+    </div>
+
+</section>
+
+<section id="creditos" class="oculto">
+
+    <div class="creditosContenido">
+
+        <h2>CRÉDITOS</h2>
+
+        <p class="creditosProyecto">
+            MULTIVERSE SURVIVAL
+        </p>
+
+        <div class="creditosBloque">
+
+            <h3>DESARROLLADO POR</h3>
+
+            <p>
+                Leonardo Miguel Delgado Hernández
+            </p>
+
+            <p>
+                Aarón Angel Aquino
+            </p>
+
+        </div>
+
+        <div class="creditosBloque">
+
+            <h3>TECNOLOGÍAS</h3>
+
+            <p>
+                HTML5 · CSS3 · JavaScript · Node.js
+            </p>
+
+        </div>
+
+        <div class="creditosBloque">
+
+            <h3>PROYECTO ACADÉMICO</h3>
+
+            <p>
+                Videojuego arcade web
+            </p>
+
+        </div>
+
+        <button id="btnVolverCreditos">
+            VOLVER
+        </button>
+
+    </div>
+
+</section>
 
 
         <!-- SELECCIÓN DE PERSONAJE -->
-        <section id="seleccion" class="oculto">
+<section id="seleccion" class="oculto">
 
-            <h2>Selecciona tu personaje</h2>
+    <h2>Selecciona tu personaje</h2>
 
-            <div class="personajes">
+    <div class="personajes">
 
-                <button class="personaje" data-personaje="miku">
+        <button class="personaje" data-personaje="miku">
 
-                    <h3>MIKU</h3>
-
-                    <p>❤️ Vida: 100</p>
-                    <p>⚡ Velocidad: Alta</p>
-                    <p>🎵 Daño: 12</p>
-
-                </button>
-
-
-                <button class="personaje" data-personaje="teto">
-
-                    <h3>TETO</h3>
-
-                    <p>❤️ Vida: 120</p>
-                    <p>⚡ Velocidad: Media</p>
-                    <p>🎵 Daño: 15</p>
-
-                </button>
-
-
-                <button class="personaje" data-personaje="ado">
-
-                    <h3>ADO</h3>
-
-                    <p>❤️ Vida: 90</p>
-                    <p>⚡ Velocidad: Muy alta</p>
-                    <p>🎵 Daño: 20</p>
-
-                </button>
-
+            <div class="retratoPersonaje miku">
+                <span>MIKU</span>
             </div>
 
-        </section>
+            <div class="infoPersonaje">
+                <h3>MIKU</h3>
+
+                <p>❤️ Vida: 100</p>
+                <p>⚡ Velocidad: Alta</p>
+                <p>🎵 Daño: 12</p>
+            </div>
+
+            <div class="seleccionarTexto">
+                SELECCIONAR
+            </div>
+
+        </button>
+
+
+        <button class="personaje" data-personaje="teto">
+
+            <div class="retratoPersonaje teto">
+                <span>TETO</span>
+            </div>
+
+            <div class="infoPersonaje">
+                <h3>TETO</h3>
+
+                <p>❤️ Vida: 120</p>
+                <p>⚡ Velocidad: Media</p>
+                <p>🎵 Daño: 15</p>
+            </div>
+
+            <div class="seleccionarTexto">
+                SELECCIONAR
+            </div>
+
+        </button>
+
+
+        <button class="personaje" data-personaje="ado">
+
+            <div class="retratoPersonaje ado">
+                <span>ADO</span>
+            </div>
+
+            <div class="infoPersonaje">
+                <h3>ADO</h3>
+
+                <p>❤️ Vida: 90</p>
+                <p>⚡ Velocidad: Muy alta</p>
+                <p>🎵 Daño: 20</p>
+            </div>
+
+            <div class="seleccionarTexto">
+                SELECCIONAR
+            </div>
+
+        </button>
+
+    </div>
+
+    <button id="btnVolverSeleccion">
+    VOLVER AL MENÚ
+</button>
+
+</section>
 
 
         <!-- JUEGO -->
@@ -90,6 +234,16 @@
                 </span>
 
                 <span>
+                    🌊 Oleada:
+                     <strong id="hudOleada">1</strong>
+                 </span>
+
+                 <span>
+                    👾 Restantes:
+                    <strong id="hudEnemigos">5</strong>
+                </span>
+
+                <span>
                     ⭐ Puntos:
                     <strong id="hudPuntos">0</strong>
                 </span>
@@ -97,15 +251,52 @@
             </div>
 
             <canvas
-                id="canvas"
-                width="960"
-                height="540">
+            id="canvas"
+            width="1280"
+            height="720">
             </canvas>
 
             <div id="pausaOverlay" class="oculto">
-             <h2>PAUSA</h2>
-            <p>Presiona P o Esc para continuar</p>
-            </div>
+
+    <h2>PAUSA</h2>
+
+    <p>Presiona P o Esc para continuar</p>
+
+    <div class="botonesPausa">
+
+        <button id="btnContinuar">
+            CONTINUAR
+        </button>
+
+        <button id="btnMenuPausa">
+            VOLVER AL MENÚ
+        </button>
+
+    </div>
+
+</div>
+
+<div id="tiendaOverlay" class="oculto">
+
+    <div class="tiendaVentana">
+
+        <h2>TIENDA</h2>
+
+        <p class="subtituloTienda">
+            Elige una mejora y continúa cuando quieras.
+        </p>
+
+        <div id="tiendaOpciones" class="tiendaOpciones"></div>
+
+        <div class="tiendaAcciones">
+            <button id="btnCerrarTienda">
+                CONTINUAR
+            </button>
+        </div>
+
+    </div>
+
+</div>
             
             <p class="controles">
                 WASD / Flechas = mover · Mouse = apuntar · Clic = disparar
@@ -125,8 +316,12 @@
             </p>
 
             <button id="btnReiniciar">
-                VOLVER AL MENÚ
-            </button>
+        REINTENTAR
+        </button>
+
+            <button id="btnMenu">
+        VOLVER AL MENÚ
+        </button>
 
         </section>
 
