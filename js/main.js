@@ -1,11 +1,18 @@
+// ============================================================
+// MAIN.JS - NEON SIEGE
+// Personaje jugable único: Ado
+// IDLE: assets/sprites/players/ado/ado_idle_pistol.png
+// HIT:  assets/sprites/players/ado/ado_hit_pistol.png
+// DEATH: assets/sprites/players/ado/ado_death_pistol.png
+// Filas: 0 abajo | 1 abajo-derecha | 2 derecha | 3 arriba-derecha
+//        4 arriba | 5 arriba-izquierda | 6 izquierda | 7 abajo-izquierda
+// ============================================================
+
 // ===============================
 // ELEMENTOS DEL HTML
 // ===============================
 
 const menu = document.getElementById("menu");
-const seleccion = document.getElementById("seleccion");
-const btnVolverSeleccion =
-    document.getElementById("btnVolverSeleccion");
 const juego = document.getElementById("juego");
 const gameOver = document.getElementById("gameOver");
 const codex = document.getElementById("codex");
@@ -30,7 +37,6 @@ const btnMenu = document.getElementById("btnMenu");
 const btnContinuar = document.getElementById("btnContinuar");
 const btnMenuPausa = document.getElementById("btnMenuPausa");
 
-const botonesPersonaje = document.querySelectorAll(".personaje");
 
 const hudPersonaje = document.getElementById("hudPersonaje");
 const hudVida = document.getElementById("hudVida");
@@ -54,29 +60,46 @@ const ctx = canvas.getContext("2d");
 // SPRITES DEL JUGADOR
 // ===============================
 
-const adoIdle = new Image();
-adoIdle.src = "assets/sprites/players/ado/idle.png";
+function cargarSpritesAdo() {
 
-const adoRun = new Image();
-adoRun.src = "assets/sprites/players/ado/run.png";
+    const idle = new Image();
+    idle.src =
+        "assets/sprites/players/ado/ado_idle_pistol.png";
 
-const adoAttack = [];
+    // RUN todavía no se integra.
+    // Mientras tanto, al moverse Ado seguirá usando el IDLE direccional.
 
-for (let i = 1; i <= 5; i++) {
+    const hit = new Image();
+    hit.src =
+        "assets/sprites/players/ado/ado_hit_pistol.png";
 
-    const imagen = new Image();
+    const death = new Image();
+    death.src =
+        "assets/sprites/players/ado/ado_death_pistol.png";
 
-    imagen.src =
-        `assets/sprites/players/ado/attack${i}.png`;
+    const attack = new Image();
+    attack.src =
+        "assets/sprites/players/ado/ado_attack_pistol.png";
 
-    adoAttack.push(imagen);
+    return {
+        idle: idle,
+        hit: hit,
+        death: death,
+        attack: attack
+    };
 }
 
-const adoHit = new Image();
-adoHit.src = "assets/sprites/players/ado/hit.png";
+const spritesAdo = cargarSpritesAdo();
 
-const adoDeath = new Image();
-adoDeath.src = "assets/sprites/players/ado/death.png";
+const tamañosSprites = {
+
+    idle: 110,
+    attack: 110,
+    hit: 110,
+    death: 125
+
+};
+
 
 // ===============================
 // SPRITES ENEMIGO - BICHO NORMAL
@@ -90,7 +113,7 @@ const bichoIdleRight = new Image();
 bichoIdleRight.src =
     "assets/sprites/enemies/bicho-normal/idle-right.png";
 
-    const bichoDeathLeft = new Image();
+const bichoDeathLeft = new Image();
 bichoDeathLeft.src =
     "assets/sprites/enemies/bicho-normal/death-left.png";
 
@@ -98,7 +121,7 @@ const bichoDeathRight = new Image();
 bichoDeathRight.src =
     "assets/sprites/enemies/bicho-normal/death-right.png";
 
-    const bichoAttackLeft = new Image();
+const bichoAttackLeft = new Image();
 bichoAttackLeft.src =
     "assets/sprites/enemies/bicho-normal/attack-left.png";
 
@@ -106,38 +129,19 @@ const bichoAttackRight = new Image();
 bichoAttackRight.src =
     "assets/sprites/enemies/bicho-normal/attack-right.png";
 
+
 // ===============================
 // PERSONAJES
 // ===============================
 
-const personajes = {
+const datosAdo = {
 
-    miku: {
-        nombre: "Miku",
-        vida: 100,
-        velocidad: 4.5,
-        daño: 12,
-        cadencia: 250,
-        color: "#39f5d2"
-    },
-
-    teto: {
-        nombre: "Teto",
-        vida: 120,
-        velocidad: 4,
-        daño: 15,
-        cadencia: 320,
-        color: "#ff4567"
-    },
-
-    ado: {
-        nombre: "Ado",
-        vida: 90,
-        velocidad: 5,
-        daño: 20,
-        cadencia: 400,
-        color: "#3366ff"
-    }
+    nombre: "Ado",
+    vida: 90,
+    velocidad: 5,
+    daño: 20,
+    cadencia: 400,
+    color: "#3366ff"
 
 };
 
@@ -150,7 +154,6 @@ let jugador;
 
 let proyectiles = [];
 let enemigos = [];
-let personajeActual = null;
 
 let teclas = {};
 
@@ -197,7 +200,8 @@ let ultimoSpawn = 0;
 btnJugar.addEventListener("click", function () {
 
     menu.classList.add("oculto");
-    seleccion.classList.remove("oculto");
+
+    iniciarJuego();
 
 });
 
@@ -237,44 +241,15 @@ btnVolverCreditos.addEventListener("click", function () {
 
 
 // ===============================
-// SELECCIONAR PERSONAJE
-// ===============================
-
-botonesPersonaje.forEach(function (boton) {
-
-    boton.addEventListener("click", function () {
-
-        const personajeElegido =
-            boton.dataset.personaje;
-
-        iniciarJuego(personajeElegido);
-
-    });
-
-});
-
-btnVolverSeleccion.addEventListener("click", function () {
-
-    seleccion.classList.add("oculto");
-
-    menu.classList.remove("oculto");
-
-});
-
-
-// ===============================
 // INICIAR JUEGO
 // ===============================
 
-function iniciarJuego(personajeElegido) {
+function iniciarJuego() {
 
-    personajeActual = personajeElegido;
-
-    seleccion.classList.add("oculto");
     juego.classList.remove("oculto");
     gameOver.classList.add("oculto");
 
-    const datos = personajes[personajeElegido];
+    const datos = datosAdo;
 
     jugador = {
 
@@ -297,6 +272,15 @@ function iniciarJuego(personajeElegido) {
         color: datos.color,
 
         moviendo: false,
+
+        // Dirección del spritesheet:
+        // 0 abajo, 1 abajo-derecha, 2 derecha, 3 arriba-derecha,
+        // 4 arriba, 5 arriba-izquierda, 6 izquierda, 7 abajo-izquierda
+        direccion: 0,
+
+        // Dirección usada al disparar. Se calcula con la posición del mouse
+        // para que apuntar y moverse sean independientes.
+        direccionAtaque: 0,
 
         ataqueInicio: 0,
         ataqueHasta: 0,
@@ -343,8 +327,11 @@ function iniciarJuego(personajeElegido) {
     hudPuntos.textContent =
         puntos;
 
-        hudHexa.textContent = hexaCores;
-        hudXP.textContent = experiencia;
+    hudHexa.textContent =
+        hexaCores;
+
+    hudXP.textContent =
+        experiencia;
 
     juegoPausado = false;
     pausaOverlay.classList.add("oculto");
@@ -453,7 +440,7 @@ jugador.ataqueInicio =
     performance.now();
 
 jugador.ataqueHasta =
-    jugador.ataqueInicio + 450;
+    jugador.ataqueInicio + 560;
 
 
     const angulo =
@@ -461,6 +448,25 @@ jugador.ataqueHasta =
             mouse.y - jugador.y,
             mouse.x - jugador.x
         );
+
+    // Dirección del ataque según el mouse.
+    // Orden de filas del spritesheet:
+    // 0 ↓, 1 ↘, 2 →, 3 ↗, 4 ↑, 5 ↖, 6 ←, 7 ↙
+    let grados =
+        angulo * 180 / Math.PI;
+
+    if (grados < 0) {
+        grados += 360;
+    }
+
+    const octante =
+        Math.round(grados / 45) % 8;
+
+    const mapaDireccionAtaque =
+        [2, 1, 0, 7, 6, 5, 4, 3];
+
+    jugador.direccionAtaque =
+        mapaDireccionAtaque[octante];
 
 
     const velocidadBala = 8;
@@ -544,6 +550,27 @@ function moverJugador() {
     }
 
     jugador.moviendo = (x !== 0 || y !== 0);
+
+    if (jugador.moviendo) {
+
+        if (x === 0 && y > 0) {
+            jugador.direccion = 0;
+        } else if (x > 0 && y > 0) {
+            jugador.direccion = 1;
+        } else if (x > 0 && y === 0) {
+            jugador.direccion = 2;
+        } else if (x > 0 && y < 0) {
+            jugador.direccion = 3;
+        } else if (x === 0 && y < 0) {
+            jugador.direccion = 4;
+        } else if (x < 0 && y < 0) {
+            jugador.direccion = 5;
+        } else if (x < 0 && y === 0) {
+            jugador.direccion = 6;
+        } else if (x < 0 && y > 0) {
+            jugador.direccion = 7;
+        }
+    }
 
     // Evita que diagonal sea más rápida
 
@@ -667,13 +694,12 @@ function moverEnemigos() {
 
     enemigos.forEach(function (enemigo) {
 
-        // Si está muriendo, no se mueve
+        // Un enemigo que está muriendo ya no se mueve.
         if (enemigo.muriendo) {
             return;
         }
 
-        // Mientras está atacando,
-        // se queda quieto
+        // Mientras reproduce su ataque se queda quieto.
         if (
             performance.now() <
             (enemigo.atacandoHasta || 0)
@@ -681,13 +707,11 @@ function moverEnemigos() {
             return;
         }
 
-
         const diferenciaX =
             jugador.x - enemigo.x;
 
         const diferenciaY =
             jugador.y - enemigo.y;
-
 
         const distancia =
             Math.hypot(
@@ -695,16 +719,11 @@ function moverEnemigos() {
                 diferenciaY
             );
 
-
-        // Distancia a la que debe detenerse
-        // frente al jugador
+        // Se detiene justo antes de atravesar al jugador.
         const distanciaMinima =
             jugador.radio +
             enemigo.radio - 2;
 
-
-        // Solo avanza si todavía
-        // no está tocando al jugador
         if (distancia > distanciaMinima) {
 
             const angulo =
@@ -713,31 +732,24 @@ function moverEnemigos() {
                     diferenciaX
                 );
 
-
-            // Evita que atraviese al jugador
-            // aunque esté muy cerca
             const movimiento =
                 Math.min(
                     enemigo.velocidad,
                     distancia - distanciaMinima
                 );
 
-
             enemigo.x +=
                 Math.cos(angulo)
                 * movimiento;
 
-
             enemigo.y +=
                 Math.sin(angulo)
                 * movimiento;
-
         }
 
     });
 
 }
-
 
 // ===============================
 // PROYECTILES
@@ -784,7 +796,9 @@ function moverProyectiles() {
 
 function revisarColisiones() {
 
+    // ===============================
     // PROYECTILES VS ENEMIGOS
+    // ===============================
 
     for (
         let i = proyectiles.length - 1;
@@ -804,13 +818,17 @@ function revisarColisiones() {
             const enemigo =
                 enemigos[j];
 
+            // Los enemigos que ya están muriendo
+            // no absorben más proyectiles.
+            if (enemigo.muriendo) {
+                continue;
+            }
 
             const distancia =
                 Math.hypot(
                     proyectil.x - enemigo.x,
                     proyectil.y - enemigo.y
                 );
-
 
             if (
                 distancia
@@ -823,148 +841,145 @@ function revisarColisiones() {
                 enemigo.vida -=
                     proyectil.daño;
 
-
                 proyectiles.splice(
                     i,
                     1
                 );
 
-
                 if (
-    enemigo.vida <= 0
-    &&
-    !enemigo.muriendo
-) {
+                    enemigo.vida <= 0
+                    &&
+                    !enemigo.muriendo
+                ) {
 
-    enemigo.muriendo = true;
+                    // No se elimina inmediatamente:
+                    // primero reproduce su animación de muerte.
+                    enemigo.muriendo = true;
 
-    enemigo.muerteInicio =
-        performance.now();
+                    enemigo.muerteInicio =
+                        performance.now();
 
-    enemigo.muerteHasta =
-        enemigo.muerteInicio + 700;
+                    enemigo.muerteHasta =
+                        enemigo.muerteInicio + 700;
 
-    enemigo.direccionMuerte =
-        jugador.x > enemigo.x
-            ? "right"
-            : "left";
+                    enemigo.direccionMuerte =
+                        jugador.x > enemigo.x
+                            ? "right"
+                            : "left";
 
-    enemigosEliminadosOleada++;
+                    enemigosEliminadosOleada++;
 
-    hudEnemigos.textContent =
-        enemigosPorOleada - enemigosEliminadosOleada;
+                    hudEnemigos.textContent =
+                        enemigosPorOleada
+                        - enemigosEliminadosOleada;
 
-    puntos += 100;
+                    puntos += 100;
 
-    hudPuntos.textContent =
-        puntos;
+                    hudPuntos.textContent =
+                        puntos;
 
-        // Recompensas provisionales del bicho común
+                    // Recompensas provisionales del bicho común.
+                    hexaCores += 1;
+                    experiencia += 10;
 
-hexaCores += 1;
-experiencia += 10;
+                    hudHexa.textContent =
+                        hexaCores;
 
-hudHexa.textContent =
-    hexaCores;
-
-hudXP.textContent =
-    experiencia;
-}
+                    hudXP.textContent =
+                        experiencia;
+                }
 
                 break;
-
             }
+        }
+    }
 
+
+    // ===============================
+    // JUGADOR VS ENEMIGOS
+    // ===============================
+
+    enemigos.forEach(function (enemigo) {
+
+        // Un enemigo muerto ya no puede atacar.
+        if (enemigo.muriendo) {
+            return;
         }
 
-    }
+        const distancia =
+            Math.hypot(
+                jugador.x - enemigo.x,
+                jugador.y - enemigo.y
+            );
 
-
-    // JUGADOR VS ENEMIGOS
-
-enemigos.forEach(function (enemigo) {
-
-    // Un enemigo muerto ya no puede atacar
-    if (enemigo.muriendo) {
-        return;
-    }
-
-    const distancia =
-        Math.hypot(
-            jugador.x - enemigo.x,
-            jugador.y - enemigo.y
-        );
-
-
-    if (
-        distancia
-        <
-        jugador.radio + enemigo.radio
-    ) {
-
-        const ahora =
-            performance.now();
-
-
-        // Ataque con tiempo de espera
         if (
-            ahora >=
-            (enemigo.proximoAtaque || 0)
+            distancia
+            <
+            jugador.radio + enemigo.radio
         ) {
 
-            enemigo.proximoAtaque =
-                ahora + 700;
+            const ahora =
+                performance.now();
 
+            // Cada bicho tiene su propio cooldown de ataque.
+            if (
+                ahora >=
+                (enemigo.proximoAtaque || 0)
+            ) {
 
-            jugador.vida -= 1;
+                enemigo.proximoAtaque =
+                    ahora + 700;
 
-            hudVida.textContent =
-                jugador.vida;
+                jugador.vida -= 1;
 
+                if (jugador.vida < 0) {
+                    jugador.vida = 0;
+                }
 
-            jugador.hitInicio =
-                ahora;
+                hudVida.textContent =
+                    jugador.vida;
 
-            jugador.hitHasta =
-                ahora + 320;
+                // IMPORTANTE:
+                // conserva la corrección que hicimos al HIT de Ado.
+                // Aunque varios bichos golpeen, la animación actual
+                // no vuelve a comenzar hasta que termine.
+                if (ahora >= jugador.hitHasta) {
 
+                    jugador.hitInicio =
+                        ahora;
 
-            // Animación de ataque
+                    jugador.hitHasta =
+                        ahora + 440;
+                }
 
-            enemigo.atacandoHasta =
-                ahora + 400;
+                // Animación de ataque del bicho.
+                enemigo.atacandoHasta =
+                    ahora + 400;
 
-            enemigo.direccionAtaque =
-                jugador.x > enemigo.x
-                    ? "right"
-                    : "left";
+                enemigo.direccionAtaque =
+                    jugador.x > enemigo.x
+                        ? "right"
+                        : "left";
 
+                // Empuje pequeño para separar las hitboxes.
+                const angulo =
+                    Math.atan2(
+                        enemigo.y - jugador.y,
+                        enemigo.x - jugador.x
+                    );
 
-            // Empuje pequeño
+                enemigo.x +=
+                    Math.cos(angulo) * 10;
 
-            const angulo =
-                Math.atan2(
-                    enemigo.y - jugador.y,
-                    enemigo.x - jugador.x
-                );
+                enemigo.y +=
+                    Math.sin(angulo) * 10;
 
-
-            enemigo.x +=
-                Math.cos(angulo) * 10;
-
-            enemigo.y +=
-                Math.sin(angulo) * 10;
-
-
-            if (jugador.vida <= 0) {
-                iniciarMuerte();
+                if (jugador.vida <= 0) {
+                    iniciarMuerte();
+                }
             }
-
         }
-
-    }
-
-});
+    });
 
 }
 
@@ -974,224 +989,157 @@ enemigos.forEach(function (enemigo) {
 
 function dibujarJugador(tiempo) {
 
-    // ===============================
-    // ADO
-    // ===============================
+    const sprites = spritesAdo;
 
-    if (personajeActual === "ado") {
 
     // ===============================
-    // DEATH
+    // DEATH DE ADO - 8 DIRECCIONES x 8 FRAMES
     // ===============================
 
-if (jugador.muriendo) {
+    if (jugador.muriendo) {
 
-    const cantidadFramesDeath = 5;
+        if (
+            sprites.death.complete &&
+            sprites.death.naturalWidth > 0
+        ) {
 
-    const anchoFrame =
-        Math.floor(
-            adoDeath.naturalWidth /
-            cantidadFramesDeath
-        );
+            const anchoFrame = 192;
+            const altoFrame = 192;
 
-    const altoFrame =
-        adoDeath.naturalHeight;
+            const tiempoDeath =
+                tiempo - jugador.deathInicio;
 
-    const tiempoDeath =
-        tiempo - jugador.deathInicio;
+            // 8 frames de muerte, 90 ms cada uno.
+            const frameActual =
+                Math.min(
+                    Math.floor(tiempoDeath / 90),
+                    7
+                );
 
-    const frameActual =
-        Math.min(
-            Math.floor(tiempoDeath / 130),
-            4
-        );
+            // Usa la última dirección en la que estaba mirando Ado.
+            const filaActual =
+                jugador.direccion;
 
-    const altoSprite = 125;
+            const anchoSprite = 120;
+            const altoSprite = 120;
 
-    const anchoSprite =
-        altoSprite *
-        (anchoFrame / altoFrame);
+            ctx.drawImage(
+                sprites.death,
 
-    ctx.drawImage(
-        adoDeath,
+                // Recorte dentro del spritesheet
+                frameActual * anchoFrame,
+                filaActual * altoFrame,
+                anchoFrame,
+                altoFrame,
 
-        frameActual * anchoFrame,
-        0,
+                // Posición y tamaño dentro del Canvas
+                jugador.x - anchoSprite / 2,
+                jugador.y - altoSprite / 2,
+                anchoSprite,
+                altoSprite
+            );
 
-        anchoFrame,
-        altoFrame,
+            return;
+        }
+    }
 
-        jugador.x - anchoSprite / 2,
-        jugador.y - altoSprite / 2,
-
-        anchoSprite,
-        altoSprite
-    );
-
-    return;
-}
 
     // ===============================
-    // HIT
+    // HIT DE ADO - 8 DIRECCIONES x 8 FRAMES
     // ===============================
 
-if (tiempo < jugador.hitHasta) {
+    if (tiempo < jugador.hitHasta) {
 
-    const cantidadFramesHit = 4;
+        if (
+            sprites.hit.complete &&
+            sprites.hit.naturalWidth > 0
+        ) {
 
-    const anchoFrame =
-        Math.floor(
-            adoHit.naturalWidth /
-            cantidadFramesHit
-        );
+            const anchoFrame = 192;
+            const altoFrame = 192;
 
-    const altoFrame =
-        adoHit.naturalHeight;
+            const tiempoHit =
+                tiempo - jugador.hitInicio;
 
-    const tiempoHit =
-        tiempo - jugador.hitInicio;
+            // 8 frames de daño.
+            // 55 ms x 8 frames = 440 ms aprox.
+            const frameActual =
+                Math.min(
+                    Math.floor(tiempoHit / 55),
+                    7
+                );
 
-    const frameActual =
-        Math.min(
-            Math.floor(tiempoHit / 80),
-            3
-        );
+            // El HIT usa la dirección actual del personaje:
+            // 0 abajo
+            // 1 abajo-derecha
+            // 2 derecha
+            // 3 arriba-derecha
+            // 4 arriba
+            // 5 arriba-izquierda
+            // 6 izquierda
+            // 7 abajo-izquierda
+            const filaActual =
+                jugador.direccion;
 
-    const altoSprite = 110;
+            // Tamaño visual similar al IDLE.
+            const anchoSprite = 120;
+            const altoSprite = 120;
 
-    const anchoSprite =
-        altoSprite *
-        (anchoFrame / altoFrame);
+            ctx.drawImage(
+                sprites.hit,
 
-    ctx.drawImage(
-        adoHit,
+                // Recorte dentro del spritesheet
+                frameActual * anchoFrame,
+                filaActual * altoFrame,
+                anchoFrame,
+                altoFrame,
 
-        frameActual * anchoFrame,
-        0,
+                // Posición y tamaño dentro del Canvas
+                jugador.x - anchoSprite / 2,
+                jugador.y - altoSprite / 2,
+                anchoSprite,
+                altoSprite
+            );
 
-        anchoFrame,
-        altoFrame,
+            return;
+        }
+    }
 
-        jugador.x - anchoSprite / 2,
-        jugador.y - altoSprite / 2,
 
-        anchoSprite,
-        altoSprite
-    );
+    // ===============================
+    // ATTACK DE ADO - 8 DIRECCIONES x 8 FRAMES
+    // ===============================
 
-    return;
-}
+    if (tiempo < jugador.ataqueHasta) {
 
-        // ===============================
-        // ATAQUE
-        // ===============================
+        if (
+            sprites.attack.complete &&
+            sprites.attack.naturalWidth > 0
+        ) {
 
-        if (tiempo < jugador.ataqueHasta) {
-
-            const duracionFrame = 90;
+            const anchoFrame = 192;
+            const altoFrame = 192;
 
             const tiempoAtaque =
                 tiempo - jugador.ataqueInicio;
 
-            let frameActual =
-                Math.floor(
-                    tiempoAtaque / duracionFrame
-                );
-
-            frameActual =
-                Math.min(frameActual, 4);
-
-            const spriteAtaque =
-                adoAttack[frameActual];
-
-
-            if (
-                spriteAtaque.complete &&
-                spriteAtaque.naturalWidth > 0
-            ) {
-
-                const tamañoAtaque = 110;
-
-                ctx.drawImage(
-                    spriteAtaque,
-
-                    jugador.x - tamañoAtaque / 2,
-                    jugador.y - tamañoAtaque / 2,
-
-                    tamañoAtaque,
-                    tamañoAtaque
-                );
-
-                return;
-            }
-        }
-
-
-        // ===============================
-        // IDLE / RUN
-        // ===============================
-
-        let spriteActual;
-        let cantidadFrames;
-        let velocidadAnimacion;
-        let altoSprite;
-
-
-        if (jugador.moviendo) {
-
-            spriteActual = adoRun;
-
-            cantidadFrames = 6;
-
-            velocidadAnimacion = 140;
-
-            altoSprite = 140;
-
-        } else {
-
-            spriteActual = adoIdle;
-
-            cantidadFrames = 4;
-
-            velocidadAnimacion = 200;
-
-            altoSprite = 110;
-        }
-
-
-        if (
-            spriteActual.complete &&
-            spriteActual.naturalWidth > 0
-        ) {
-
-            const anchoFrame =
-                Math.floor(
-                    spriteActual.naturalWidth
-                    / cantidadFrames
-                );
-
-            const altoFrame =
-                spriteActual.naturalHeight;
-
-
             const frameActual =
-                Math.floor(
-                    tiempo / velocidadAnimacion
-                )
-                % cantidadFrames;
+                Math.min(
+                    Math.floor(tiempoAtaque / 70),
+                    7
+                );
 
+            const filaActual =
+                jugador.direccionAtaque;
 
-            const anchoSprite =
-                altoSprite
-                * (anchoFrame / altoFrame);
-
+            const anchoSprite = 130;
+            const altoSprite = 130;
 
             ctx.drawImage(
-                spriteActual,
+                sprites.attack,
 
                 frameActual * anchoFrame,
-                0,
-
+                filaActual * altoFrame,
                 anchoFrame,
                 altoFrame,
 
@@ -1208,8 +1156,50 @@ if (tiempo < jugador.hitHasta) {
 
 
     // ===============================
-    // MIKU Y TETO TEMPORALES
+    // IDLE DIRECCIONAL DE ADO
     // ===============================
+
+    // Por ahora este mismo spritesheet se usa estando quieta y moviéndose.
+    // Cuando integremos el spritesheet RUN, aquí separaremos ambos estados.
+    if (
+        sprites.idle.complete &&
+        sprites.idle.naturalWidth > 0
+    ) {
+
+        const anchoFrame = 192;
+        const altoFrame = 192;
+
+        const frameActual =
+            Math.floor(tiempo / 160) % 8;
+
+        const filaActual =
+            jugador.direccion;
+
+        const anchoSprite = 120;
+        const altoSprite = 120;
+
+        ctx.drawImage(
+            sprites.idle,
+
+            frameActual * anchoFrame,
+            filaActual * altoFrame,
+            anchoFrame,
+            altoFrame,
+
+            jugador.x - anchoSprite / 2,
+            jugador.y - altoSprite / 2,
+
+            anchoSprite,
+            altoSprite
+        );
+
+        return;
+    }
+
+    dibujarJugadorTemporal();
+}
+
+function dibujarJugadorTemporal() {
 
     ctx.beginPath();
 
@@ -1226,7 +1216,6 @@ if (tiempo < jugador.hitHasta) {
 
     ctx.fill();
 
-
     ctx.fillStyle =
         "white";
 
@@ -1238,7 +1227,6 @@ if (tiempo < jugador.hitHasta) {
 
     ctx.textBaseline =
         "middle";
-
 
     ctx.fillText(
         jugador.nombre[0],
@@ -1283,7 +1271,8 @@ function dibujarProyectiles() {
 
 function dibujarEnemigos() {
 
-    const tiempo = performance.now();
+    const tiempo =
+        performance.now();
 
     for (
         let i = enemigos.length - 1;
@@ -1291,72 +1280,89 @@ function dibujarEnemigos() {
         i--
     ) {
 
-        const enemigo = enemigos[i];
+        const enemigo =
+            enemigos[i];
 
         let sprite;
         let cantidadFrames;
+        let frameActual = 0;
 
 
         // ===============================
-        // MUERTE
+        // MUERTE DEL BICHO
         // ===============================
 
         if (enemigo.muriendo) {
 
-    sprite = bichoDeathLeft;
+            sprite =
+                bichoDeathLeft;
 
-    cantidadFrames = 5;
+            cantidadFrames = 5;
 
-
-            // Cuando termina la animación,
-            // eliminamos al enemigo de verdad
+            // Al terminar la animación
+            // ahora sí se elimina del arreglo.
             if (tiempo >= enemigo.muerteHasta) {
 
-                enemigos.splice(i, 1);
+                enemigos.splice(
+                    i,
+                    1
+                );
 
                 continue;
             }
-
         }
 
         // ===============================
-        // ATAQUE
+        // ATAQUE DEL BICHO
         // ===============================
 
         else if (
-        tiempo < (enemigo.atacandoHasta || 0)
-    ) {
+            tiempo <
+            (enemigo.atacandoHasta || 0)
+        ) {
 
-    if (enemigo.direccionAtaque === "right") {
-    sprite = bichoAttackLeft;
-} else {
-    sprite = bichoAttackRight;
-}
+            // Se conserva la orientación
+            // de los sprites que ya probó tu amigo.
+            if (
+                enemigo.direccionAtaque
+                === "right"
+            ) {
+                sprite =
+                    bichoAttackLeft;
+            } else {
+                sprite =
+                    bichoAttackRight;
+            }
 
-    cantidadFrames = 4;
-}
+            cantidadFrames = 4;
+        }
 
         // ===============================
-        // IDLE
+        // IDLE / PERSECUCIÓN
         // ===============================
 
         else {
 
             if (jugador.x > enemigo.x) {
-                sprite = bichoIdleRight;
+
+                sprite =
+                    bichoIdleRight;
+
             } else {
-                sprite = bichoIdleLeft;
+
+                sprite =
+                    bichoIdleLeft;
             }
 
             cantidadFrames = 4;
         }
 
 
-        // Si la imagen todavía no cargó,
-        // usamos temporalmente el círculo rojo
-
+        // Si el sprite aún no terminó de cargar,
+        // dibuja el círculo rojo temporal.
         if (
-            !sprite.complete ||
+            !sprite.complete
+            ||
             sprite.naturalWidth === 0
         ) {
 
@@ -1370,7 +1376,8 @@ function dibujarEnemigos() {
                 Math.PI * 2
             );
 
-            ctx.fillStyle = "#ff3030";
+            ctx.fillStyle =
+                "#ff3030";
 
             ctx.fill();
 
@@ -1379,136 +1386,123 @@ function dibujarEnemigos() {
 
 
         const anchoFrame =
-            sprite.naturalWidth /
-            cantidadFrames;
+            sprite.naturalWidth
+            / cantidadFrames;
 
         const altoFrame =
             sprite.naturalHeight;
 
 
-        // ===============================
-// FRAME DE MUERTE
-// ===============================
+        if (enemigo.muriendo) {
 
-if (enemigo.muriendo) {
+            const tiempoMuerte =
+                tiempo
+                - enemigo.muerteInicio;
 
-    const tiempoMuerte =
-        tiempo - enemigo.muerteInicio;
+            frameActual =
+                Math.min(
+                    Math.floor(
+                        tiempoMuerte / 140
+                    ),
+                    cantidadFrames - 1
+                );
 
-    frameActual =
-        Math.min(
-            Math.floor(
-                tiempoMuerte / 140
-            ),
-            cantidadFrames - 1
-        );
+        } else if (
+            tiempo <
+            (enemigo.atacandoHasta || 0)
+        ) {
 
-}
+            const tiempoAtaque =
+                400
+                - (
+                    enemigo.atacandoHasta
+                    - tiempo
+                );
 
+            frameActual =
+                Math.min(
+                    Math.floor(
+                        tiempoAtaque / 100
+                    ),
+                    cantidadFrames - 1
+                );
 
-// ===============================
-// FRAME DE ATAQUE
-// ===============================
+        } else {
 
-else if (
-    tiempo < (enemigo.atacandoHasta || 0)
-) {
-
-    const tiempoAtaque =
-        400 - (
-            enemigo.atacandoHasta - tiempo
-        );
-
-    frameActual =
-        Math.min(
-            Math.floor(
-                tiempoAtaque / 100
-            ),
-            cantidadFrames - 1
-        );
-
-}
-
-
-// ===============================
-// FRAME IDLE
-// ===============================
-
-else {
-
-    frameActual =
-        Math.floor(
-            tiempo / 160
-        ) % cantidadFrames;
-
-}
+            frameActual =
+                Math.floor(
+                    tiempo / 160
+                )
+                % cantidadFrames;
+        }
 
 
         const altoSprite = 95;
 
         const anchoSprite =
-            altoSprite *
-            (anchoFrame / altoFrame);
+            altoSprite
+            * (
+                anchoFrame
+                / altoFrame
+            );
 
 
+        // La muerte usa un volteo horizontal
+        // cuando corresponde.
         if (
-    enemigo.muriendo
-    &&
-    enemigo.direccionMuerte === "right"
-) {
+            enemigo.muriendo
+            &&
+            enemigo.direccionMuerte === "right"
+        ) {
 
-    ctx.save();
+            ctx.save();
 
-    ctx.translate(
-        enemigo.x,
-        enemigo.y
-    );
+            ctx.translate(
+                enemigo.x,
+                enemigo.y
+            );
 
-    ctx.scale(
-        -1,
-        1
-    );
+            ctx.scale(
+                -1,
+                1
+            );
 
-    ctx.drawImage(
+            ctx.drawImage(
+                sprite,
 
-        sprite,
+                frameActual * anchoFrame,
+                0,
 
-        frameActual * anchoFrame,
-        0,
+                anchoFrame,
+                altoFrame,
 
-        anchoFrame,
-        altoFrame,
+                -anchoSprite / 2,
+                -altoSprite / 2,
 
-        -anchoSprite / 2,
-        -altoSprite / 2,
+                anchoSprite,
+                altoSprite
+            );
 
-        anchoSprite,
-        altoSprite
+            ctx.restore();
 
-    );
+        } else {
 
-    ctx.restore();
+            ctx.drawImage(
+                sprite,
 
-} else {
+                frameActual * anchoFrame,
+                0,
 
-    ctx.drawImage(
+                anchoFrame,
+                altoFrame,
 
-        sprite,
+                enemigo.x - anchoSprite / 2,
+                enemigo.y - altoSprite / 2,
 
-        frameActual * anchoFrame,
-        0,
-
-        anchoFrame,
-        altoFrame,
-
-        enemigo.x - anchoSprite / 2,
-        enemigo.y - altoSprite / 2,
-
-        anchoSprite,
-        altoSprite
-
-    );
-}
+                anchoSprite,
+                altoSprite
+            );
+        }
     }
 
 }
@@ -1745,7 +1739,7 @@ function iniciarMuerte() {
         performance.now();
 
     jugador.deathHasta =
-        jugador.deathInicio + 650;
+        jugador.deathInicio + 720;
 
     teclas = {};
 }
@@ -1779,9 +1773,7 @@ function terminarJuego() {
 
 btnReiniciar.addEventListener("click", function () {
 
-    if (personajeActual) {
-        iniciarJuego(personajeActual);
-    }
+    iniciarJuego();
 
 });
 
@@ -1824,7 +1816,6 @@ btnMenuPausa.addEventListener("click", function () {
     pausaOverlay.classList.add("oculto");
     juego.classList.add("oculto");
     gameOver.classList.add("oculto");
-    seleccion.classList.add("oculto");
 
     menu.classList.remove("oculto");
 

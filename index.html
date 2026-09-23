@@ -20,7 +20,7 @@
             <h1>MULTIVERSE SURVIVAL</h1>
 
             <p>
-                Elige a tu personaje y sobrevive a las oleadas del multiverso.
+                Sobrevive a las oleadas del multiverso junto a Ado.
             </p>
 
             <div class="menuBotones">
@@ -139,124 +139,45 @@
 
 </section>
 
+        <!-- JUEGO -->
+        <section id="juego" class="oculto">
 
-        <!-- SELECCIÓN DE PERSONAJE -->
-<section id="seleccion" class="oculto">
+            <div id="hud">
 
-    <h2>Selecciona tu personaje</h2>
+                <span>
+                    Personaje:
+                    <strong id="hudPersonaje"></strong>
+                </span>
 
-    <div class="personajes">
+                <span>
+                    ❤️ Vida:
+                    <strong id="hudVida"></strong>
+                </span>
 
-        <button class="personaje" data-personaje="miku">
+                <span>
+                    🌊 Oleada:
+                     <strong id="hudOleada">1</strong>
+                 </span>
 
-            <div class="retratoPersonaje miku">
-                <span>MIKU</span>
-            </div>
+                 <span>
+                    👾 Restantes:
+                    <strong id="hudEnemigos">5</strong>
+                </span>
 
-            <div class="infoPersonaje">
-                <h3>MIKU</h3>
+                <span>
+                    ⭐ Puntos:
+                    <strong id="hudPuntos">0</strong>
+                </span>
 
-                <p>❤️ Vida: 100</p>
-                <p>⚡ Velocidad: Alta</p>
-                <p>🎵 Daño: 12</p>
-            </div>
+                <span>
+                    ⬡ Hexa Cores:
+                    <strong id="hudHexa">0</strong>
+                </span>
 
-            <div class="seleccionarTexto">
-                SELECCIONAR
-            </div>
-
-        </button>
-
-
-        <button class="personaje" data-personaje="teto">
-
-            <div class="retratoPersonaje teto">
-                <span>TETO</span>
-            </div>
-
-            <div class="infoPersonaje">
-                <h3>TETO</h3>
-
-                <p>❤️ Vida: 120</p>
-                <p>⚡ Velocidad: Media</p>
-                <p>🎵 Daño: 15</p>
-            </div>
-
-            <div class="seleccionarTexto">
-                SELECCIONAR
-            </div>
-
-        </button>
-
-
-        <button class="personaje" data-personaje="ado">
-
-            <div class="retratoPersonaje ado">
-                <span>ADO</span>
-            </div>
-
-            <div class="infoPersonaje">
-                <h3>ADO</h3>
-
-                <p>❤️ Vida: 90</p>
-                <p>⚡ Velocidad: Muy alta</p>
-                <p>🎵 Daño: 20</p>
-            </div>
-
-            <div class="seleccionarTexto">
-                SELECCIONAR
-            </div>
-
-        </button>
-
-    </div>
-
-    <button id="btnVolverSeleccion">
-    VOLVER AL MENÚ
-</button>
-
-</section>
-
-
-       <!-- JUEGO -->
-<section id="juego" class="oculto">
-
-    <div id="hud">
-
-        <span>
-            Personaje:
-            <strong id="hudPersonaje"></strong>
-        </span>
-
-        <span>
-            ❤️ Vida:
-            <strong id="hudVida"></strong>
-        </span>
-
-        <span>
-            🌊 Oleada:
-            <strong id="hudOleada">1</strong>
-        </span>
-
-        <span>
-            👾 Restantes:
-            <strong id="hudEnemigos">5</strong>
-        </span>
-
-        <span>
-            ⭐ Puntos:
-            <strong id="hudPuntos">0</strong>
-        </span>
-
-        <span>
-            ⬡ Hexa Cores:
-            <strong id="hudHexa">0</strong>
-        </span>
-
-        <span>
-            ✨ XP:
-            <strong id="hudXP">0</strong>
-        </span>
+                <span>
+                    ✨ XP:
+                    <strong id="hudXP">0</strong>
+                </span>
 
             </div>
 
