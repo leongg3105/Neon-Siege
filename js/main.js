@@ -35,6 +35,13 @@ const botonesPersonaje = document.querySelectorAll(".personaje");
 const hudPersonaje = document.getElementById("hudPersonaje");
 const hudVida = document.getElementById("hudVida");
 const hudPuntos = document.getElementById("hudPuntos");
+
+const hudHexa =
+    document.getElementById("hudHexa");
+
+const hudXP =
+    document.getElementById("hudXP");
+
 const hudOleada = document.getElementById("hudOleada");
 const hudEnemigos = document.getElementById("hudEnemigos");
 
@@ -70,6 +77,34 @@ adoHit.src = "assets/sprites/players/ado/hit.png";
 
 const adoDeath = new Image();
 adoDeath.src = "assets/sprites/players/ado/death.png";
+
+// ===============================
+// SPRITES ENEMIGO - BICHO NORMAL
+// ===============================
+
+const bichoIdleLeft = new Image();
+bichoIdleLeft.src =
+    "assets/sprites/enemies/bicho-normal/idle-left.png";
+
+const bichoIdleRight = new Image();
+bichoIdleRight.src =
+    "assets/sprites/enemies/bicho-normal/idle-right.png";
+
+    const bichoDeathLeft = new Image();
+bichoDeathLeft.src =
+    "assets/sprites/enemies/bicho-normal/death-left.png";
+
+const bichoDeathRight = new Image();
+bichoDeathRight.src =
+    "assets/sprites/enemies/bicho-normal/death-right.png";
+
+    const bichoAttackLeft = new Image();
+bichoAttackLeft.src =
+    "assets/sprites/enemies/bicho-normal/attack-left.png";
+
+const bichoAttackRight = new Image();
+bichoAttackRight.src =
+    "assets/sprites/enemies/bicho-normal/attack-right.png";
 
 // ===============================
 // PERSONAJES
@@ -125,6 +160,8 @@ let mouse = {
 };
 
 let puntos = 0;
+let hexaCores = 0;
+let experiencia = 0;
 
 let ultimoDisparo = 0;
 
@@ -278,6 +315,8 @@ function iniciarJuego(personajeElegido) {
     enemigos = [];
 
     puntos = 0;
+    hexaCores = 0;
+    experiencia = 0;
 
     oleada = 1;
     enemigosGenerados = 0;
@@ -303,6 +342,9 @@ function iniciarJuego(personajeElegido) {
 
     hudPuntos.textContent =
         puntos;
+
+        hudHexa.textContent = hexaCores;
+        hudXP.textContent = experiencia;
 
     juegoPausado = false;
     pausaOverlay.classList.add("oculto");
@@ -625,21 +667,72 @@ function moverEnemigos() {
 
     enemigos.forEach(function (enemigo) {
 
-        const angulo =
-            Math.atan2(
-                jugador.y - enemigo.y,
-                jugador.x - enemigo.x
+        // Si está muriendo, no se mueve
+        if (enemigo.muriendo) {
+            return;
+        }
+
+        // Mientras está atacando,
+        // se queda quieto
+        if (
+            performance.now() <
+            (enemigo.atacandoHasta || 0)
+        ) {
+            return;
+        }
+
+
+        const diferenciaX =
+            jugador.x - enemigo.x;
+
+        const diferenciaY =
+            jugador.y - enemigo.y;
+
+
+        const distancia =
+            Math.hypot(
+                diferenciaX,
+                diferenciaY
             );
 
 
-        enemigo.x +=
-            Math.cos(angulo)
-            * enemigo.velocidad;
+        // Distancia a la que debe detenerse
+        // frente al jugador
+        const distanciaMinima =
+            jugador.radio +
+            enemigo.radio - 2;
 
 
-        enemigo.y +=
-            Math.sin(angulo)
-            * enemigo.velocidad;
+        // Solo avanza si todavía
+        // no está tocando al jugador
+        if (distancia > distanciaMinima) {
+
+            const angulo =
+                Math.atan2(
+                    diferenciaY,
+                    diferenciaX
+                );
+
+
+            // Evita que atraviese al jugador
+            // aunque esté muy cerca
+            const movimiento =
+                Math.min(
+                    enemigo.velocidad,
+                    distancia - distanciaMinima
+                );
+
+
+            enemigo.x +=
+                Math.cos(angulo)
+                * movimiento;
+
+
+            enemigo.y +=
+                Math.sin(angulo)
+                * movimiento;
+
+        }
 
     });
 
@@ -739,12 +832,22 @@ function revisarColisiones() {
 
                 if (
     enemigo.vida <= 0
+    &&
+    !enemigo.muriendo
 ) {
 
-    enemigos.splice(
-        j,
-        1
-    );
+    enemigo.muriendo = true;
+
+    enemigo.muerteInicio =
+        performance.now();
+
+    enemigo.muerteHasta =
+        enemigo.muerteInicio + 700;
+
+    enemigo.direccionMuerte =
+        jugador.x > enemigo.x
+            ? "right"
+            : "left";
 
     enemigosEliminadosOleada++;
 
@@ -756,8 +859,17 @@ function revisarColisiones() {
     hudPuntos.textContent =
         puntos;
 
-}
+        // Recompensas provisionales del bicho común
 
+hexaCores += 1;
+experiencia += 10;
+
+hudHexa.textContent =
+    hexaCores;
+
+hudXP.textContent =
+    experiencia;
+}
 
                 break;
 
@@ -770,67 +882,91 @@ function revisarColisiones() {
 
     // JUGADOR VS ENEMIGOS
 
-    enemigos.forEach(
-        function (enemigo) {
+enemigos.forEach(function (enemigo) {
 
-            const distancia =
-                Math.hypot(
-                    jugador.x - enemigo.x,
-                    jugador.y - enemigo.y
+    // Un enemigo muerto ya no puede atacar
+    if (enemigo.muriendo) {
+        return;
+    }
+
+    const distancia =
+        Math.hypot(
+            jugador.x - enemigo.x,
+            jugador.y - enemigo.y
+        );
+
+
+    if (
+        distancia
+        <
+        jugador.radio + enemigo.radio
+    ) {
+
+        const ahora =
+            performance.now();
+
+
+        // Ataque con tiempo de espera
+        if (
+            ahora >=
+            (enemigo.proximoAtaque || 0)
+        ) {
+
+            enemigo.proximoAtaque =
+                ahora + 700;
+
+
+            jugador.vida -= 1;
+
+            hudVida.textContent =
+                jugador.vida;
+
+
+            jugador.hitInicio =
+                ahora;
+
+            jugador.hitHasta =
+                ahora + 320;
+
+
+            // Animación de ataque
+
+            enemigo.atacandoHasta =
+                ahora + 400;
+
+            enemigo.direccionAtaque =
+                jugador.x > enemigo.x
+                    ? "right"
+                    : "left";
+
+
+            // Empuje pequeño
+
+            const angulo =
+                Math.atan2(
+                    enemigo.y - jugador.y,
+                    enemigo.x - jugador.x
                 );
 
 
-            if (
-                distancia
-                <
-                jugador.radio
-                +
-                enemigo.radio
-            ) {
+            enemigo.x +=
+                Math.cos(angulo) * 10;
 
-                jugador.vida -= 1;
+            enemigo.y +=
+                Math.sin(angulo) * 10;
 
 
-                hudVida.textContent =
-                    jugador.vida;
-
-                jugador.hitInicio =
-                    performance.now();
-
-                jugador.hitHasta =
-                    jugador.hitInicio + 320;
-
-
-                // Empuja al enemigo
-
-                const angulo =
-                    Math.atan2(
-                        enemigo.y - jugador.y,
-                        enemigo.x - jugador.x
-                    );
-
-
-                enemigo.x +=
-                    Math.cos(angulo)
-                    * 25;
-
-
-                enemigo.y +=
-                    Math.sin(angulo)
-                    * 25;
-
-
-                if (jugador.vida <= 0) {
-                    iniciarMuerte();
-                }
-
+            if (jugador.vida <= 0) {
+                iniciarMuerte();
             }
 
         }
-    );
+
+    }
+
+});
 
 }
-
 
 // ===============================
 // DIBUJAR JUGADOR
@@ -1147,8 +1283,82 @@ function dibujarProyectiles() {
 
 function dibujarEnemigos() {
 
-    enemigos.forEach(
-        function (enemigo) {
+    const tiempo = performance.now();
+
+    for (
+        let i = enemigos.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const enemigo = enemigos[i];
+
+        let sprite;
+        let cantidadFrames;
+
+
+        // ===============================
+        // MUERTE
+        // ===============================
+
+        if (enemigo.muriendo) {
+
+    sprite = bichoDeathLeft;
+
+    cantidadFrames = 5;
+
+
+            // Cuando termina la animación,
+            // eliminamos al enemigo de verdad
+            if (tiempo >= enemigo.muerteHasta) {
+
+                enemigos.splice(i, 1);
+
+                continue;
+            }
+
+        }
+
+        // ===============================
+        // ATAQUE
+        // ===============================
+
+        else if (
+        tiempo < (enemigo.atacandoHasta || 0)
+    ) {
+
+    if (enemigo.direccionAtaque === "right") {
+    sprite = bichoAttackLeft;
+} else {
+    sprite = bichoAttackRight;
+}
+
+    cantidadFrames = 4;
+}
+
+        // ===============================
+        // IDLE
+        // ===============================
+
+        else {
+
+            if (jugador.x > enemigo.x) {
+                sprite = bichoIdleRight;
+            } else {
+                sprite = bichoIdleLeft;
+            }
+
+            cantidadFrames = 4;
+        }
+
+
+        // Si la imagen todavía no cargó,
+        // usamos temporalmente el círculo rojo
+
+        if (
+            !sprite.complete ||
+            sprite.naturalWidth === 0
+        ) {
 
             ctx.beginPath();
 
@@ -1160,13 +1370,146 @@ function dibujarEnemigos() {
                 Math.PI * 2
             );
 
-            ctx.fillStyle =
-                "#ff3030";
+            ctx.fillStyle = "#ff3030";
 
             ctx.fill();
 
+            continue;
         }
+
+
+        const anchoFrame =
+            sprite.naturalWidth /
+            cantidadFrames;
+
+        const altoFrame =
+            sprite.naturalHeight;
+
+
+        // ===============================
+// FRAME DE MUERTE
+// ===============================
+
+if (enemigo.muriendo) {
+
+    const tiempoMuerte =
+        tiempo - enemigo.muerteInicio;
+
+    frameActual =
+        Math.min(
+            Math.floor(
+                tiempoMuerte / 140
+            ),
+            cantidadFrames - 1
+        );
+
+}
+
+
+// ===============================
+// FRAME DE ATAQUE
+// ===============================
+
+else if (
+    tiempo < (enemigo.atacandoHasta || 0)
+) {
+
+    const tiempoAtaque =
+        400 - (
+            enemigo.atacandoHasta - tiempo
+        );
+
+    frameActual =
+        Math.min(
+            Math.floor(
+                tiempoAtaque / 100
+            ),
+            cantidadFrames - 1
+        );
+
+}
+
+
+// ===============================
+// FRAME IDLE
+// ===============================
+
+else {
+
+    frameActual =
+        Math.floor(
+            tiempo / 160
+        ) % cantidadFrames;
+
+}
+
+
+        const altoSprite = 95;
+
+        const anchoSprite =
+            altoSprite *
+            (anchoFrame / altoFrame);
+
+
+        if (
+    enemigo.muriendo
+    &&
+    enemigo.direccionMuerte === "right"
+) {
+
+    ctx.save();
+
+    ctx.translate(
+        enemigo.x,
+        enemigo.y
     );
+
+    ctx.scale(
+        -1,
+        1
+    );
+
+    ctx.drawImage(
+
+        sprite,
+
+        frameActual * anchoFrame,
+        0,
+
+        anchoFrame,
+        altoFrame,
+
+        -anchoSprite / 2,
+        -altoSprite / 2,
+
+        anchoSprite,
+        altoSprite
+
+    );
+
+    ctx.restore();
+
+} else {
+
+    ctx.drawImage(
+
+        sprite,
+
+        frameActual * anchoFrame,
+        0,
+
+        anchoFrame,
+        altoFrame,
+
+        enemigo.x - anchoSprite / 2,
+        enemigo.y - altoSprite / 2,
+
+        anchoSprite,
+        altoSprite
+
+    );
+}
+    }
 
 }
 
