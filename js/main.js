@@ -41,6 +41,13 @@ const btnMenuPausa = document.getElementById("btnMenuPausa");
 const hudPersonaje = document.getElementById("hudPersonaje");
 const hudVida = document.getElementById("hudVida");
 const hudPuntos = document.getElementById("hudPuntos");
+
+const hudHexa =
+    document.getElementById("hudHexa");
+
+const hudXP =
+    document.getElementById("hudXP");
+
 const hudOleada = document.getElementById("hudOleada");
 const hudEnemigos = document.getElementById("hudEnemigos");
 
@@ -95,6 +102,35 @@ const tamañosSprites = {
 
 
 // ===============================
+// SPRITES ENEMIGO - BICHO NORMAL
+// ===============================
+
+const bichoIdleLeft = new Image();
+bichoIdleLeft.src =
+    "assets/sprites/enemies/bicho-normal/idle-left.png";
+
+const bichoIdleRight = new Image();
+bichoIdleRight.src =
+    "assets/sprites/enemies/bicho-normal/idle-right.png";
+
+const bichoDeathLeft = new Image();
+bichoDeathLeft.src =
+    "assets/sprites/enemies/bicho-normal/death-left.png";
+
+const bichoDeathRight = new Image();
+bichoDeathRight.src =
+    "assets/sprites/enemies/bicho-normal/death-right.png";
+
+const bichoAttackLeft = new Image();
+bichoAttackLeft.src =
+    "assets/sprites/enemies/bicho-normal/attack-left.png";
+
+const bichoAttackRight = new Image();
+bichoAttackRight.src =
+    "assets/sprites/enemies/bicho-normal/attack-right.png";
+
+
+// ===============================
 // PERSONAJES
 // ===============================
 
@@ -127,6 +163,8 @@ let mouse = {
 };
 
 let puntos = 0;
+let hexaCores = 0;
+let experiencia = 0;
 
 let ultimoDisparo = 0;
 
@@ -261,6 +299,8 @@ function iniciarJuego() {
     enemigos = [];
 
     puntos = 0;
+    hexaCores = 0;
+    experiencia = 0;
 
     oleada = 1;
     enemigosGenerados = 0;
@@ -286,6 +326,12 @@ function iniciarJuego() {
 
     hudPuntos.textContent =
         puntos;
+
+    hudHexa.textContent =
+        hexaCores;
+
+    hudXP.textContent =
+        experiencia;
 
     juegoPausado = false;
     pausaOverlay.classList.add("oculto");
@@ -648,26 +694,62 @@ function moverEnemigos() {
 
     enemigos.forEach(function (enemigo) {
 
-        const angulo =
-            Math.atan2(
-                jugador.y - enemigo.y,
-                jugador.x - enemigo.x
+        // Un enemigo que está muriendo ya no se mueve.
+        if (enemigo.muriendo) {
+            return;
+        }
+
+        // Mientras reproduce su ataque se queda quieto.
+        if (
+            performance.now() <
+            (enemigo.atacandoHasta || 0)
+        ) {
+            return;
+        }
+
+        const diferenciaX =
+            jugador.x - enemigo.x;
+
+        const diferenciaY =
+            jugador.y - enemigo.y;
+
+        const distancia =
+            Math.hypot(
+                diferenciaX,
+                diferenciaY
             );
 
+        // Se detiene justo antes de atravesar al jugador.
+        const distanciaMinima =
+            jugador.radio +
+            enemigo.radio - 2;
 
-        enemigo.x +=
-            Math.cos(angulo)
-            * enemigo.velocidad;
+        if (distancia > distanciaMinima) {
 
+            const angulo =
+                Math.atan2(
+                    diferenciaY,
+                    diferenciaX
+                );
 
-        enemigo.y +=
-            Math.sin(angulo)
-            * enemigo.velocidad;
+            const movimiento =
+                Math.min(
+                    enemigo.velocidad,
+                    distancia - distanciaMinima
+                );
+
+            enemigo.x +=
+                Math.cos(angulo)
+                * movimiento;
+
+            enemigo.y +=
+                Math.sin(angulo)
+                * movimiento;
+        }
 
     });
 
 }
-
 
 // ===============================
 // PROYECTILES
@@ -714,7 +796,9 @@ function moverProyectiles() {
 
 function revisarColisiones() {
 
+    // ===============================
     // PROYECTILES VS ENEMIGOS
+    // ===============================
 
     for (
         let i = proyectiles.length - 1;
@@ -734,13 +818,17 @@ function revisarColisiones() {
             const enemigo =
                 enemigos[j];
 
+            // Los enemigos que ya están muriendo
+            // no absorben más proyectiles.
+            if (enemigo.muriendo) {
+                continue;
+            }
 
             const distancia =
                 Math.hypot(
                     proyectil.x - enemigo.x,
                     proyectil.y - enemigo.y
                 );
-
 
             if (
                 distancia
@@ -753,110 +841,147 @@ function revisarColisiones() {
                 enemigo.vida -=
                     proyectil.daño;
 
-
                 proyectiles.splice(
                     i,
                     1
                 );
 
-
                 if (
-    enemigo.vida <= 0
-) {
+                    enemigo.vida <= 0
+                    &&
+                    !enemigo.muriendo
+                ) {
 
-    enemigos.splice(
-        j,
-        1
-    );
+                    // No se elimina inmediatamente:
+                    // primero reproduce su animación de muerte.
+                    enemigo.muriendo = true;
 
-    enemigosEliminadosOleada++;
+                    enemigo.muerteInicio =
+                        performance.now();
 
-    hudEnemigos.textContent =
-        enemigosPorOleada - enemigosEliminadosOleada;
+                    enemigo.muerteHasta =
+                        enemigo.muerteInicio + 700;
 
-    puntos += 100;
+                    enemigo.direccionMuerte =
+                        jugador.x > enemigo.x
+                            ? "right"
+                            : "left";
 
-    hudPuntos.textContent =
-        puntos;
+                    enemigosEliminadosOleada++;
 
-}
+                    hudEnemigos.textContent =
+                        enemigosPorOleada
+                        - enemigosEliminadosOleada;
 
+                    puntos += 100;
+
+                    hudPuntos.textContent =
+                        puntos;
+
+                    // Recompensas provisionales del bicho común.
+                    hexaCores += 1;
+                    experiencia += 10;
+
+                    hudHexa.textContent =
+                        hexaCores;
+
+                    hudXP.textContent =
+                        experiencia;
+                }
 
                 break;
-
             }
-
         }
-
     }
 
 
+    // ===============================
     // JUGADOR VS ENEMIGOS
+    // ===============================
 
-    enemigos.forEach(
-        function (enemigo) {
+    enemigos.forEach(function (enemigo) {
 
-            const distancia =
-                Math.hypot(
-                    jugador.x - enemigo.x,
-                    jugador.y - enemigo.y
-                );
+        // Un enemigo muerto ya no puede atacar.
+        if (enemigo.muriendo) {
+            return;
+        }
 
+        const distancia =
+            Math.hypot(
+                jugador.x - enemigo.x,
+                jugador.y - enemigo.y
+            );
 
+        if (
+            distancia
+            <
+            jugador.radio + enemigo.radio
+        ) {
+
+            const ahora =
+                performance.now();
+
+            // Cada bicho tiene su propio cooldown de ataque.
             if (
-                distancia
-                <
-                jugador.radio
-                +
-                enemigo.radio
+                ahora >=
+                (enemigo.proximoAtaque || 0)
             ) {
+
+                enemigo.proximoAtaque =
+                    ahora + 700;
 
                 jugador.vida -= 1;
 
+                if (jugador.vida < 0) {
+                    jugador.vida = 0;
+                }
 
                 hudVida.textContent =
                     jugador.vida;
 
-const ahora = performance.now();
+                // IMPORTANTE:
+                // conserva la corrección que hicimos al HIT de Ado.
+                // Aunque varios bichos golpeen, la animación actual
+                // no vuelve a comenzar hasta que termine.
+                if (ahora >= jugador.hitHasta) {
 
-if (ahora >= jugador.hitHasta) {
+                    jugador.hitInicio =
+                        ahora;
 
-    jugador.hitInicio = ahora;
-    jugador.hitHasta = ahora + 440;
+                    jugador.hitHasta =
+                        ahora + 440;
+                }
 
-}
+                // Animación de ataque del bicho.
+                enemigo.atacandoHasta =
+                    ahora + 400;
 
+                enemigo.direccionAtaque =
+                    jugador.x > enemigo.x
+                        ? "right"
+                        : "left";
 
-                // Empuja al enemigo
-
+                // Empuje pequeño para separar las hitboxes.
                 const angulo =
                     Math.atan2(
                         enemigo.y - jugador.y,
                         enemigo.x - jugador.x
                     );
 
-
                 enemigo.x +=
-                    Math.cos(angulo)
-                    * 25;
-
+                    Math.cos(angulo) * 10;
 
                 enemigo.y +=
-                    Math.sin(angulo)
-                    * 25;
-
+                    Math.sin(angulo) * 10;
 
                 if (jugador.vida <= 0) {
                     iniciarMuerte();
                 }
-
             }
-
         }
-    );
+    });
 
 }
-
 
 // ===============================
 // DIBUJAR JUGADOR
@@ -1146,8 +1271,100 @@ function dibujarProyectiles() {
 
 function dibujarEnemigos() {
 
-    enemigos.forEach(
-        function (enemigo) {
+    const tiempo =
+        performance.now();
+
+    for (
+        let i = enemigos.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const enemigo =
+            enemigos[i];
+
+        let sprite;
+        let cantidadFrames;
+        let frameActual = 0;
+
+
+        // ===============================
+        // MUERTE DEL BICHO
+        // ===============================
+
+        if (enemigo.muriendo) {
+
+            sprite =
+                bichoDeathLeft;
+
+            cantidadFrames = 5;
+
+            // Al terminar la animación
+            // ahora sí se elimina del arreglo.
+            if (tiempo >= enemigo.muerteHasta) {
+
+                enemigos.splice(
+                    i,
+                    1
+                );
+
+                continue;
+            }
+        }
+
+        // ===============================
+        // ATAQUE DEL BICHO
+        // ===============================
+
+        else if (
+            tiempo <
+            (enemigo.atacandoHasta || 0)
+        ) {
+
+            // Se conserva la orientación
+            // de los sprites que ya probó tu amigo.
+            if (
+                enemigo.direccionAtaque
+                === "right"
+            ) {
+                sprite =
+                    bichoAttackLeft;
+            } else {
+                sprite =
+                    bichoAttackRight;
+            }
+
+            cantidadFrames = 4;
+        }
+
+        // ===============================
+        // IDLE / PERSECUCIÓN
+        // ===============================
+
+        else {
+
+            if (jugador.x > enemigo.x) {
+
+                sprite =
+                    bichoIdleRight;
+
+            } else {
+
+                sprite =
+                    bichoIdleLeft;
+            }
+
+            cantidadFrames = 4;
+        }
+
+
+        // Si el sprite aún no terminó de cargar,
+        // dibuja el círculo rojo temporal.
+        if (
+            !sprite.complete
+            ||
+            sprite.naturalWidth === 0
+        ) {
 
             ctx.beginPath();
 
@@ -1164,8 +1381,129 @@ function dibujarEnemigos() {
 
             ctx.fill();
 
+            continue;
         }
-    );
+
+
+        const anchoFrame =
+            sprite.naturalWidth
+            / cantidadFrames;
+
+        const altoFrame =
+            sprite.naturalHeight;
+
+
+        if (enemigo.muriendo) {
+
+            const tiempoMuerte =
+                tiempo
+                - enemigo.muerteInicio;
+
+            frameActual =
+                Math.min(
+                    Math.floor(
+                        tiempoMuerte / 140
+                    ),
+                    cantidadFrames - 1
+                );
+
+        } else if (
+            tiempo <
+            (enemigo.atacandoHasta || 0)
+        ) {
+
+            const tiempoAtaque =
+                400
+                - (
+                    enemigo.atacandoHasta
+                    - tiempo
+                );
+
+            frameActual =
+                Math.min(
+                    Math.floor(
+                        tiempoAtaque / 100
+                    ),
+                    cantidadFrames - 1
+                );
+
+        } else {
+
+            frameActual =
+                Math.floor(
+                    tiempo / 160
+                )
+                % cantidadFrames;
+        }
+
+
+        const altoSprite = 95;
+
+        const anchoSprite =
+            altoSprite
+            * (
+                anchoFrame
+                / altoFrame
+            );
+
+
+        // La muerte usa un volteo horizontal
+        // cuando corresponde.
+        if (
+            enemigo.muriendo
+            &&
+            enemigo.direccionMuerte === "right"
+        ) {
+
+            ctx.save();
+
+            ctx.translate(
+                enemigo.x,
+                enemigo.y
+            );
+
+            ctx.scale(
+                -1,
+                1
+            );
+
+            ctx.drawImage(
+                sprite,
+
+                frameActual * anchoFrame,
+                0,
+
+                anchoFrame,
+                altoFrame,
+
+                -anchoSprite / 2,
+                -altoSprite / 2,
+
+                anchoSprite,
+                altoSprite
+            );
+
+            ctx.restore();
+
+        } else {
+
+            ctx.drawImage(
+                sprite,
+
+                frameActual * anchoFrame,
+                0,
+
+                anchoFrame,
+                altoFrame,
+
+                enemigo.x - anchoSprite / 2,
+                enemigo.y - altoSprite / 2,
+
+                anchoSprite,
+                altoSprite
+            );
+        }
+    }
 
 }
 
