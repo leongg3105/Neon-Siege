@@ -401,6 +401,17 @@ button {
     overflow: hidden;
 }
 
+/*
+   IMPORTANTE:
+   #juego usa display:flex, y al ser un selector por ID tiene
+   más prioridad que la clase .oculto. Sin esta regla, al terminar
+   la partida se añade class="oculto" al juego, pero el navegador
+   puede seguir mostrándolo y empujar el GAME OVER fuera de pantalla.
+*/
+#juego.oculto {
+    display: none;
+}
+
 #hud {
     width: 100%;
     height: 50px;
@@ -531,15 +542,21 @@ canvas {
     color: white;
 
     position: relative;
-    overflow: hidden;
+
+    /* La tienda ahora tiene dos secciones, así que permitimos
+       desplazamiento vertical si la pantalla no alcanza. */
+    max-height: 92vh;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* ============================= */
-/* ITEM DE TIENDA - BOLILLO */
+/* ITEMS DE TIENDA */
 /* ============================= */
 
 .itemTienda {
-    width: 280px;
+    width: 100%;
+    max-width: 280px;
 
     padding: 18px;
 
@@ -554,7 +571,12 @@ canvas {
 
     gap: 12px;
 
+    min-height: 330px;
+
     text-align: center;
+
+    position: relative;
+    z-index: 1;
 }
 
 .imagenItemTienda {
@@ -564,6 +586,21 @@ canvas {
     object-fit: contain;
 
     image-rendering: pixelated;
+}
+
+/* Íconos provisionales para mejoras que todavía no tienen sprite propio. */
+.iconoItemTienda {
+    width: 120px;
+    height: 120px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-size: 76px;
+    line-height: 1;
+
+    filter: drop-shadow(0 0 12px rgba(88, 217, 255, 0.45));
 }
 
 .infoItemTienda h3 {
@@ -592,7 +629,7 @@ canvas {
     color: #8de8ff;
 }
 
-#btnComprarBolillo {
+.itemTienda button {
     padding: 10px 22px;
 
     border: 1px solid #58d9ff;
@@ -609,10 +646,98 @@ canvas {
     transition: 0.2s;
 }
 
-#btnComprarBolillo:hover {
+.itemTienda button:hover {
     background: #18344a;
 
     transform: scale(1.05);
+}
+
+/* ========================================================= */
+/* MEJORAS DEL ARMA SELECCIONADA */
+/* ========================================================= */
+
+.seccionMejorasArma {
+    margin-top: 28px;
+    padding-top: 24px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+
+    position: relative;
+    z-index: 1;
+}
+
+.tituloSeccionTienda {
+    margin: 0 0 8px;
+
+    font-size: 24px;
+    letter-spacing: 2px;
+}
+
+.descripcionSeccionTienda {
+    margin: 0 0 18px;
+
+    color: #c9cad4;
+    font-size: 14px;
+}
+
+.mejorasArmaOpciones {
+    margin-top: 10px;
+}
+
+.tarjetaMejoraArma {
+    border-color: #6f78d8;
+    min-height: 390px;
+}
+
+/*
+   Los archivos pistola.png, escopeta.png y energia.png son
+   spritesheets horizontales de 4 frames.
+   background-size: 400% hace que el div muestre solo UN frame.
+*/
+.spriteArmaTienda {
+    width: 120px;
+    height: 76px;
+
+    flex-shrink: 0;
+
+    background-repeat: no-repeat;
+    background-position: left center;
+    background-size: 400% 100%;
+
+    filter: drop-shadow(0 0 12px rgba(90, 150, 255, 0.55));
+}
+
+.armaObjetivoTienda {
+    margin: 8px 0;
+
+    color: #a9c7ff;
+    font-size: 15px;
+}
+
+.cambioEstadisticaTienda {
+    margin: 10px 0;
+    padding: 8px 10px;
+
+    border: 1px solid rgba(112, 140, 255, 0.35);
+    border-radius: 6px;
+
+    background: rgba(50, 65, 120, 0.18);
+
+    color: #e9edff;
+    font-size: 15px;
+}
+
+.cambioEstadisticaTienda strong:last-child {
+    color: #7dffb2;
+}
+
+/* Detalles visuales para distinguir las nuevas mejoras. */
+.bateriaTienda {
+    border-color: #4cb8ff;
+}
+
+.catalizadorTienda {
+    border-color: #d9b84c;
 }
 
 .tiendaVentana::before {
@@ -672,9 +797,25 @@ canvas {
 .tiendaOpciones {
     display: grid;
 
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    justify-items: center;
 
     gap: 18px;
+}
+
+/* En pantallas angostas, la tienda baja a una sola columna. */
+@media (max-width: 850px) {
+
+    .tiendaVentana {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .tiendaOpciones {
+        grid-template-columns: 1fr;
+    }
 }
 
 .opcionTienda {
@@ -962,4 +1103,390 @@ canvas {
 
 #btnVolverCreditos:hover {
     background: rgba(255, 255, 255, 0.14);
+}
+/* ========================================================= */
+/* GAME OVER - CENTRADO EN PANTALLA */
+/* ========================================================= */
+/*
+   #gameOver ocupa toda la pantalla y usa flex-wrap para que
+   el título y la puntuación estén en filas completas, mientras
+   que los botones REINTENTAR y VOLVER AL MENÚ quedan juntos.
+*/
+#gameOver {
+    width: 100vw;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 20px;
+
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+
+    text-align: center;
+}
+
+/* Solo se convierte en flex cuando debe mostrarse. */
+#gameOver:not(.oculto) {
+    display: flex;
+}
+
+/* Título y puntuación ocupan una fila completa. */
+#gameOver h2,
+#gameOver p {
+    flex-basis: 100%;
+}
+
+#gameOver h2 {
+    margin: 0 0 10px;
+}
+
+#gameOver p {
+    margin: 0 0 15px;
+}
+
+/* Mantener los dos botones uno junto al otro. */
+#gameOver button {
+    margin: 10px 4px 0;
+}
+
+/* Garantiza que oculto siga ganando sobre display:flex. */
+#gameOver.oculto {
+    display: none;
+}
+
+/* ========================================================= */
+/* TIENDA - TODAS LAS ARMAS DISPONIBLES PARA MEJORAR */
+/* ========================================================= */
+/*
+   La tienda muestra un bloque independiente para cada arma.
+   No importa cuál esté equipada: todas se pueden comprar.
+*/
+
+.tiendaVentana {
+    width: 1180px;
+}
+
+.contenedorMejorasArmas {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.bloqueArmaTienda {
+    padding: 18px;
+
+    border: 1px solid rgba(120, 140, 220, 0.35);
+    border-radius: 12px;
+
+    background: rgba(8, 10, 22, 0.62);
+
+    position: relative;
+    z-index: 1;
+}
+
+.encabezadoArmaTienda {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+
+    margin-bottom: 18px;
+}
+
+.encabezadoArmaTienda h3 {
+    margin: 0 0 6px;
+
+    font-size: 25px;
+    letter-spacing: 2px;
+}
+
+.etiquetaEquipada {
+    display: inline-block;
+
+    padding: 4px 9px;
+
+    border: 1px solid rgba(94, 224, 255, 0.65);
+    border-radius: 999px;
+
+    background: rgba(57, 217, 255, 0.12);
+
+    color: #8de8ff;
+
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.gridMejorasArma {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+.gridMejorasArma .itemTienda {
+    max-width: none;
+    min-height: 270px;
+}
+
+.gridMejorasArma .infoItemTienda {
+    width: 100%;
+}
+
+.gridMejorasArma .infoItemTienda h4 {
+    margin: 0;
+
+    font-size: 18px;
+    letter-spacing: 1px;
+
+    color: white;
+}
+
+/* En esta nueva vista el sprite va una sola vez en el encabezado
+   del arma, en lugar de repetirse en cada tarjeta. */
+.encabezadoArmaTienda .spriteArmaTienda {
+    width: 110px;
+    height: 70px;
+}
+
+@media (max-width: 1050px) {
+
+    .gridMejorasArma {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 650px) {
+
+    .gridMejorasArma {
+        grid-template-columns: 1fr;
+    }
+
+    .encabezadoArmaTienda {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+}
+
+/* ========================================================= */
+/* CUARTA TARJETA - MEJORA ESPECIAL DE CADA ARMA */
+/* ========================================================= */
+
+.tarjetaMejoraEspecial {
+    border-color: rgba(255, 199, 92, 0.85);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(65, 43, 14, 0.88),
+            rgba(22, 18, 28, 0.94)
+        );
+
+    box-shadow:
+        inset 0 0 22px rgba(255, 190, 70, 0.08);
+}
+
+.tarjetaMejoraEspecial h4 {
+    color: #ffd982 !important;
+}
+
+.nivelEspecialTienda {
+    display: inline-block;
+
+    margin: 8px 0 4px;
+    padding: 5px 10px;
+
+    border: 1px solid rgba(255, 210, 120, 0.55);
+    border-radius: 999px;
+
+    background: rgba(255, 190, 70, 0.10);
+
+    color: #ffe2a1;
+
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.cambioEspecialTienda {
+    min-height: 58px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+
+    flex-wrap: wrap;
+}
+
+.especialMaxima {
+    border-color: rgba(100, 255, 180, 0.75);
+
+    box-shadow:
+        inset 0 0 26px rgba(80, 255, 170, 0.08),
+        0 0 18px rgba(80, 255, 170, 0.08);
+}
+
+.itemTienda button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.itemTienda button:disabled:hover {
+    background: #111827;
+    transform: none;
+}
+
+/* ========================================================= */
+/* SUBIDA DE NIVEL POR EXPERIENCIA */
+/* ========================================================= */
+
+#nivelOverlay {
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(2, 4, 14, 0.88);
+
+    z-index: 1300;
+
+    justify-content: center;
+    align-items: center;
+
+    padding: 24px;
+}
+
+#nivelOverlay:not(.oculto) {
+    display: flex;
+}
+
+#nivelOverlay.oculto {
+    display: none;
+}
+
+.nivelVentana {
+    width: min(980px, 95vw);
+
+    padding: 30px;
+
+    border: 2px solid rgba(112, 195, 255, 0.70);
+    border-radius: 16px;
+
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(50, 115, 180, 0.28),
+            transparent 48%
+        ),
+        rgba(9, 12, 27, 0.97);
+
+    box-shadow:
+        0 0 45px rgba(55, 175, 255, 0.18),
+        inset 0 0 30px rgba(90, 170, 255, 0.06);
+
+    text-align: center;
+}
+
+.nivelEtiqueta {
+    margin: 0 0 6px;
+
+    color: #8edcff;
+
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 4px;
+}
+
+.nivelVentana h2 {
+    margin: 0;
+
+    font-size: 52px;
+    letter-spacing: 3px;
+
+    color: white;
+}
+
+.nivelSubtitulo {
+    margin: 10px 0 24px;
+
+    color: #c7d2e8;
+}
+
+.nivelOpciones {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+.opcionNivel {
+    min-height: 215px;
+
+    padding: 22px 18px;
+
+    border: 1px solid rgba(110, 175, 255, 0.48);
+    border-radius: 12px;
+
+    background: rgba(13, 20, 42, 0.94);
+    color: white;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 12px;
+
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+}
+
+.opcionNivel:hover {
+    transform: translateY(-5px);
+
+    border-color: #8ee6ff;
+    background: rgba(21, 39, 72, 0.98);
+}
+
+.iconoNivel {
+    font-size: 48px;
+    line-height: 1;
+}
+
+.opcionNivel strong {
+    font-size: 18px;
+    letter-spacing: 1px;
+}
+
+.opcionNivel small {
+    color: #c9d3e8;
+
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+
+    .nivelOpciones {
+        grid-template-columns: 1fr;
+    }
+
+    .nivelVentana {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .opcionNivel {
+        min-height: 150px;
+    }
+
 }

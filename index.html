@@ -189,8 +189,15 @@
                 </span>
 
                 <span>
+                    🏅 Nivel:
+                    <strong id="hudNivel">1</strong>
+                </span>
+
+                <span>
                     ✨ XP:
                     <strong id="hudXP">0</strong>
+                    /
+                    <strong id="hudXPMax">50</strong>
                 </span>
 
             </div>
@@ -233,6 +240,9 @@
 
         <div id="tiendaOpciones" class="tiendaOpciones">
 
+            <!-- ============================================= -->
+            <!-- BOLILLO: RECUPERA VIDA -->
+            <!-- ============================================= -->
             <div class="itemTienda bolilloTienda">
 
                 <img
@@ -246,7 +256,7 @@
                     <h3>BOLILLO</h3>
 
                     <p class="descripcionItem">
-                        Recupera del susto de tu personaje otorgando 25 PS.
+                        Recupera 25 PS sin superar la vida máxima.
                     </p>
 
                     <p class="precioItem">
@@ -261,7 +271,97 @@
 
             </div>
 
+
+            <!-- ============================================= -->
+            <!-- BATERÍA HEXA: AUMENTA ENERGÍA MÁXIMA -->
+            <!-- ============================================= -->
+            <div class="itemTienda bateriaTienda">
+
+                <div
+                    class="iconoItemTienda"
+                    aria-hidden="true"
+                >
+                    🔋
+                </div>
+
+                <div class="infoItemTienda">
+
+                    <h3>BATERÍA HEXA</h3>
+
+                    <p class="descripcionItem">
+                        Aumenta la energía máxima en 20 y recupera esos 20 puntos al comprarla.
+                    </p>
+
+                    <p class="precioItem">
+                        ◇ 4 Hexa Cores
+                    </p>
+
+                    <button id="btnComprarBateria">
+                        COMPRAR
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- ============================================= -->
+            <!-- CATALIZADOR: MEJORA REGENERACIÓN -->
+            <!-- ============================================= -->
+            <div class="itemTienda catalizadorTienda">
+
+                <div
+                    class="iconoItemTienda"
+                    aria-hidden="true"
+                >
+                    ⚡
+                </div>
+
+                <div class="infoItemTienda">
+
+                    <h3>CATALIZADOR</h3>
+
+                    <p class="descripcionItem">
+                        Aumenta la regeneración de energía en 2 puntos por segundo.
+                    </p>
+
+                    <p class="precioItem">
+                        ◇ 5 Hexa Cores
+                    </p>
+
+                    <button id="btnComprarCatalizador">
+                        COMPRAR
+                    </button>
+
+                </div>
+
+            </div>
+
         </div>
+
+        <!-- ================================================= -->
+        <!-- MEJORAS DE TODAS LAS ARMAS -->
+        <!-- ================================================= -->
+        <section class="seccionMejorasArma">
+
+            <h3 class="tituloSeccionTienda">
+                MEJORAS DE ARMAS
+            </h3>
+
+            <p class="descripcionSeccionTienda">
+                Puedes mejorar cualquier arma, aunque no sea la que llevabas equipada al entrar a la tienda.
+                Las tres primeras mejoras son normales; la cuarta es una mejora especial exclusiva con máximo 2 niveles.
+                El arma equipada se marca únicamente como referencia.
+            </p>
+
+            <!--
+                JavaScript crea aquí las tarjetas de PISTOLA,
+                ESCOPETA y ENERGÍA. Así evitamos repetir mucho HTML
+                y después será más fácil agregar nuevas mejoras.
+            -->
+            <div id="contenedorMejorasArmas" class="contenedorMejorasArmas"></div>
+
+        </section>
 
         <div class="tiendaAcciones">
 
@@ -274,9 +374,52 @@
     </div>
 
 </div>
+
+<!-- ================================================= -->
+<!-- SUBIDA DE NIVEL POR EXPERIENCIA -->
+<!-- ================================================= -->
+<div id="nivelOverlay" class="oculto">
+
+    <div class="nivelVentana">
+
+        <p class="nivelEtiqueta">SUBIDA DE NIVEL</p>
+
+        <h2>
+            NIVEL <span id="nivelNuevo">2</span>
+        </h2>
+
+        <p class="nivelSubtitulo">
+            Elige una mejora gratuita para continuar.
+        </p>
+
+        <div class="nivelOpciones">
+
+            <button class="opcionNivel" data-mejora-nivel="vida">
+                <span class="iconoNivel">❤️</span>
+                <strong>CORAZÓN REFORZADO</strong>
+                <small>+20 vida máxima y recupera 20 PS.</small>
+            </button>
+
+            <button class="opcionNivel" data-mejora-nivel="velocidad">
+                <span class="iconoNivel">💨</span>
+                <strong>PASO LIGERO</strong>
+                <small>+10 % de velocidad de movimiento.</small>
+            </button>
+
+            <button class="opcionNivel" data-mejora-nivel="energia">
+                <span class="iconoNivel">⚡</span>
+                <strong>RESERVA HEXA</strong>
+                <small>+15 energía máxima y recupera 15.</small>
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
             
             <p class="controles">
-                WASD / Flechas = mover · Mouse = apuntar · Clic = disparar
+                WASD / Flechas = mover · Mouse = apuntar · Clic izquierdo = disparar · Clic derecho = detonar Energía Nv.2
             </p>
 
         </section>
