@@ -2,19 +2,26 @@
     box-sizing: border-box;
 }
 
+html,
 body {
     margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+}
+
+body {
     min-height: 100vh;
 
     background: #080810;
     color: white;
 
     font-family: Arial, sans-serif;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
+
 
 main {
     width: 100%;
@@ -74,12 +81,12 @@ button {
     width: 110%;
     height: 110%;
 
-    background-image: url("../assets/img/menu/FMenu.png");
+    background-image: url("../assets/img/menu/FMenuApocalipsis.png");
 
     background-size: cover;
     background-position: center;
 
-    animation: movimientoFondo 18s ease-in-out infinite alternate;
+    animation: movimientoFondo 14s ease-in-out infinite alternate;
 
     z-index: 0;
 }
@@ -106,10 +113,9 @@ button {
 
 /* TEXTO Y BOTONES POR ENCIMA DEL FONDO */
 
-#menu > * {
+#menu > *:not(.cenizas) {
     position: relative;
-
-    z-index: 2;
+    z-index: 3;
 }
 
 
@@ -118,11 +124,205 @@ button {
 @keyframes movimientoFondo {
 
     0% {
-        transform: scale(1.05) translate(0, 0);
+        transform: scale(1.07) translate(0, 0);
+    }
+
+    50% {
+        transform: scale(1.12) translate(-2%, -1%);
     }
 
     100% {
-        transform: scale(1.12) translate(-2%, -1%);
+        transform: scale(1.17) translate(-4%, -2%);
+    }
+
+}
+
+/* ============================= */
+/* CENIZAS DEL MENU */
+/* ============================= */
+
+.cenizas {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    pointer-events: none;
+
+    z-index: 2;
+}
+
+.cenizas span {
+    position: absolute;
+
+    bottom: -20px;
+
+    display: block;
+
+    border-radius: 50%;
+
+    opacity: 0;
+
+    animation-name: subirCeniza;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+.cenizas span:nth-child(1) {
+    left: 3%;
+    width: 6px;
+    height: 6px;
+    background: #ff6a00;
+    box-shadow: 0 0 10px #ff6a00;
+    animation-duration: 7s;
+    animation-delay: 0s;
+}
+
+.cenizas span:nth-child(2) {
+    left: 7%;
+    width: 4px;
+    height: 4px;
+    background: #2b2b2b;
+    animation-duration: 9s;
+    animation-delay: 1s;
+}
+
+.cenizas span:nth-child(3) {
+    left: 11%;
+    width: 7px;
+    height: 7px;
+    background: #ff8a00;
+    box-shadow: 0 0 12px #ff5500;
+    animation-duration: 8s;
+    animation-delay: 2s;
+}
+
+.cenizas span:nth-child(4) {
+    left: 16%;
+    width: 5px;
+    height: 5px;
+    background: #181818;
+    animation-duration: 10s;
+    animation-delay: 3s;
+}
+
+.cenizas span:nth-child(5) {
+    left: 5%;
+    width: 3px;
+    height: 3px;
+    background: #ff4500;
+    box-shadow: 0 0 8px #ff4500;
+    animation-duration: 6s;
+    animation-delay: 4s;
+}
+
+.cenizas span:nth-child(6) {
+    left: 20%;
+    width: 6px;
+    height: 6px;
+    background: #333333;
+    animation-duration: 11s;
+    animation-delay: 2s;
+}
+
+.cenizas span:nth-child(7) {
+    left: 9%;
+    width: 5px;
+    height: 5px;
+    background: #ff7300;
+    box-shadow: 0 0 10px #ff7300;
+    animation-duration: 7.5s;
+    animation-delay: 5s;
+}
+
+.cenizas span:nth-child(8) {
+    left: 14%;
+    width: 3px;
+    height: 3px;
+    background: #222222;
+    animation-duration: 9.5s;
+    animation-delay: 6s;
+}
+
+.cenizas span:nth-child(9) {
+    left: 2%;
+    width: 4px;
+    height: 4px;
+    background: #ff9a1f;
+    box-shadow: 0 0 9px #ff6500;
+    animation-duration: 8.5s;
+    animation-delay: 3.5s;
+}
+
+.cenizas span:nth-child(10) {
+    left: 18%;
+    width: 6px;
+    height: 6px;
+    background: #161616;
+    animation-duration: 12s;
+    animation-delay: 1.5s;
+}
+
+.cenizas span:nth-child(11) {
+    left: 24%;
+    width: 4px;
+    height: 4px;
+    background: #ff5500;
+    box-shadow: 0 0 8px #ff5500;
+    animation-duration: 7s;
+    animation-delay: 2.5s;
+}
+
+.cenizas span:nth-child(12) {
+    left: 12%;
+    width: 5px;
+    height: 5px;
+    background: #292929;
+    animation-duration: 10.5s;
+    animation-delay: 4.5s;
+}
+
+@keyframes subirCeniza {
+
+    0% {
+        transform:
+            translate(0, 0)
+            rotate(0deg);
+
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.9;
+    }
+
+    40% {
+        transform:
+            translate(25px, -180px)
+            rotate(90deg);
+
+        opacity: 0.8;
+    }
+
+    70% {
+        transform:
+            translate(-10px, -400px)
+            rotate(180deg);
+
+        opacity: 0.5;
+    }
+
+    100% {
+        transform:
+            translate(55px, -750px)
+            rotate(300deg);
+
+        opacity: 0;
     }
 
 }
@@ -189,43 +389,51 @@ button {
 /* JUEGO */
 
 #juego {
-    width: 1280px;
-    max-width: 96vw;
+    width: 100vw;
+    height: 100vh;
 
-    margin: auto;
+    margin: 0;
+    padding: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
 }
 
 #hud {
     width: 100%;
+    height: 50px;
 
-    margin: auto;
-    padding: 12px;
+    margin: 0;
+    padding: 10px 14px;
 
     display: flex;
     justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px 16px;
+    align-items: center;
 
     background: #151525;
-
-    border: 2px solid #333;
+    border-bottom: 2px solid #333;
 
     box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 canvas {
     display: block;
 
     width: 100%;
-    height: auto;
+    height: calc(100vh - 50px);
 
-    margin: auto;
+    margin: 0;
+    padding: 0;
 
+    border: none;
     background: #101020;
 
-    border: 2px solid #444;
-
     box-sizing: border-box;
+
+    flex: 1;
 }
 
 .controles {
@@ -326,6 +534,87 @@ canvas {
     overflow: hidden;
 }
 
+/* ============================= */
+/* ITEM DE TIENDA - BOLILLO */
+/* ============================= */
+
+.itemTienda {
+    width: 280px;
+
+    padding: 18px;
+
+    border: 2px solid #3d3d55;
+    border-radius: 12px;
+
+    background: rgba(12, 12, 24, 0.92);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 12px;
+
+    text-align: center;
+}
+
+.imagenItemTienda {
+    width: 120px;
+    height: 120px;
+
+    object-fit: contain;
+
+    image-rendering: pixelated;
+}
+
+.infoItemTienda h3 {
+    margin: 0;
+
+    font-size: 24px;
+
+    color: white;
+}
+
+.descripcionItem {
+    margin: 6px 0;
+
+    font-size: 14px;
+    line-height: 1.4;
+
+    color: #d0d0d0;
+}
+
+.precioItem {
+    margin: 8px 0;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    color: #8de8ff;
+}
+
+#btnComprarBolillo {
+    padding: 10px 22px;
+
+    border: 1px solid #58d9ff;
+    border-radius: 6px;
+
+    background: #111827;
+
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+#btnComprarBolillo:hover {
+    background: #18344a;
+
+    transform: scale(1.05);
+}
+
 .tiendaVentana::before {
     content: "";
 
@@ -356,10 +645,16 @@ canvas {
 
 .tiendaVentana h2,
 .subtituloTienda,
-.tiendaOpciones,
-.tiendaAcciones {
-    position: relative;
-    z-index: 1;
+.tiendaOpciones {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(250px, 280px));
+
+    justify-content: center;
+    align-items: start;
+
+    gap: 18px;
 }
 
 .tiendaVentana h2 {
