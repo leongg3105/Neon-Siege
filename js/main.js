@@ -34,11 +34,27 @@ const btnCerrarTienda = document.getElementById("btnCerrarTienda");
 const btnComprarBolillo =
     document.getElementById("btnComprarBolillo");
 
+const btnComprarBateria =
+    document.getElementById("btnComprarBateria");
+
+const btnComprarCatalizador =
+    document.getElementById("btnComprarCatalizador");
+
+// Contenedor donde se crean las mejoras de TODAS las armas.
+// Ya no dependemos del arma equipada para decidir qué se puede comprar.
+const contenedorMejorasArmas =
+    document.getElementById("contenedorMejorasArmas");
+
 const btnJugar = document.getElementById("btnJugar");
 const btnReiniciar = document.getElementById("btnReiniciar");
 const btnMenu = document.getElementById("btnMenu");
 const btnContinuar = document.getElementById("btnContinuar");
 const btnMenuPausa = document.getElementById("btnMenuPausa");
+
+// Overlay que aparece cada vez que Ado sube de nivel por experiencia.
+const nivelOverlay = document.getElementById("nivelOverlay");
+const nivelNuevo = document.getElementById("nivelNuevo");
+const opcionesNivel = document.querySelectorAll(".opcionNivel");
 
 
 const hudPersonaje = document.getElementById("hudPersonaje");
@@ -50,6 +66,12 @@ const hudHexa =
 
 const hudXP =
     document.getElementById("hudXP");
+
+const hudNivel =
+    document.getElementById("hudNivel");
+
+const hudXPMax =
+    document.getElementById("hudXPMax");
 
 const hudOleada = document.getElementById("hudOleada");
 const hudEnemigos = document.getElementById("hudEnemigos");
@@ -200,7 +222,11 @@ const armas = {
 
         // Energía que consume cada disparo.
         // La pistola no consume energía.
-        costoEnergia: 0
+        costoEnergia: 0,
+
+        // Mejora especial: RÁFAGA GEMELA.
+        // 0 = 1 bala, 1 = 2 balas, 2 = 3 balas.
+        nivelEspecial: 0
     },
 
     escopeta: {
@@ -215,7 +241,13 @@ const armas = {
         alcance: 230,
 
         // Consumo provisional por disparo de escopeta.
-        costoEnergia: 8
+        costoEnergia: 8,
+
+        // Mejora especial: LLUVIA DE PLOMO.
+        // 0 = 3 perdigones.
+        // 1 = 5 perdigones.
+        // 2 = 5 perdigones que pueden atravesar 1 enemigo.
+        nivelEspecial: 0
     },
 
     energia: {
@@ -230,10 +262,60 @@ const armas = {
         alcance: 1000,
 
         // El arma de energía es la que más recurso consume.
-        costoEnergia: 20
+        costoEnergia: 20,
+
+        // Mejora especial: NÚCLEO SOBRECARGADO.
+        // 0 = proyectil normal.
+        // 1 = proyectil 35 % más grande.
+        // 2 = clic derecho para detonar manualmente.
+        nivelEspecial: 0
     }
 
 };
+
+// ===========================================================
+// ESTADÍSTICAS BASE DE LAS ARMAS
+// ===========================================================
+// Guardamos una copia de los valores originales al cargar el juego.
+// Así, las mejoras compradas duran durante la partida actual, pero
+// al REINTENTAR se restauran automáticamente los valores iniciales.
+// ===========================================================
+
+const estadisticasBaseArmas = {};
+
+Object.keys(armas).forEach(function (claveArma) {
+
+    const arma = armas[claveArma];
+
+    estadisticasBaseArmas[claveArma] = {
+        daño: arma.daño,
+        cadencia: arma.cadencia,
+        velocidad: arma.velocidad,
+        alcance: arma.alcance,
+        costoEnergia: arma.costoEnergia,
+        nivelEspecial: arma.nivelEspecial
+    };
+
+});
+
+
+function reiniciarEstadisticasArmas() {
+
+    Object.keys(armas).forEach(function (claveArma) {
+
+        const arma = armas[claveArma];
+        const base = estadisticasBaseArmas[claveArma];
+
+        arma.daño = base.daño;
+        arma.cadencia = base.cadencia;
+        arma.velocidad = base.velocidad;
+        arma.alcance = base.alcance;
+        arma.costoEnergia = base.costoEnergia;
+        arma.nivelEspecial = base.nivelEspecial;
+
+    });
+
+}
 
 // ===============================
 // PERSONAJES
@@ -265,6 +347,12 @@ let jugador;
 let proyectiles = [];
 let enemigos = [];
 
+// Efectos visuales de las detonaciones del arma de energía.
+let explosionesEnergia = [];
+
+// Partículas de impactos, muertes, daño a Ado y subida de nivel.
+let particulas = [];
+
 let teclas = {};
 
 let mouse = {
@@ -274,7 +362,19 @@ let mouse = {
 
 let puntos = 0;
 let hexaCores = 0;
+
+// ===========================================================
+// SISTEMA DE EXPERIENCIA Y NIVELES
+// ===========================================================
+// Cada bicho normal sigue entregando 10 XP.
+// Nivel 1 -> 2 requiere 50 XP. Después el requisito aumenta
+// 25 XP por nivel: 50, 75, 100, 125...
+// ===========================================================
 let experiencia = 0;
+let nivelJugador = 1;
+let experienciaNecesaria = 50;
+let mejorasNivelPendientes = 0;
+let nivelOverlayActivo = false;
 
 let ultimoDisparo = 0;
 let armaActual = "pistola";
@@ -292,9 +392,15 @@ let armaActual = "pistola";
 //   Cuántos puntos se recuperan por SEGUNDO.
 //   Si quieres que recargue más rápido, aumenta este número.
 // ===========================================================
-let energiaMaxima = 100;
+// Valores base de una partida nueva.
+// Las mejoras de la tienda modifican energiaMaxima y
+// regeneracionEnergia solo durante la partida actual.
+const energiaMaximaBase = 100;
+const regeneracionEnergiaBase = 8;
+
+let energiaMaxima = energiaMaximaBase;
 let energiaActual = energiaMaxima;
-let regeneracionEnergia = 8;
+let regeneracionEnergia = regeneracionEnergiaBase;
 let ultimoTiempoEnergia = 0;
 
 let oleada = 1;
@@ -320,6 +426,348 @@ let juegoActivo = false;
 let juegoPausado = false;
 
 let ultimoSpawn = 0;
+
+
+// ===========================================================
+// EXPERIENCIA / SUBIDA DE NIVEL
+// ===========================================================
+
+function calcularExperienciaNecesaria(nivel) {
+
+    return 50 + (nivel - 1) * 25;
+
+}
+
+
+function actualizarHUDExperiencia() {
+
+    hudNivel.textContent =
+        nivelJugador;
+
+    hudXP.textContent =
+        experiencia;
+
+    hudXPMax.textContent =
+        experienciaNecesaria;
+
+}
+
+
+function agregarExperiencia(cantidad) {
+
+    experiencia += cantidad;
+
+    // El while permite que una explosión que mate muchos enemigos
+    // pueda acumular más de una subida de nivel sin perder XP.
+    while (
+        experiencia >= experienciaNecesaria
+    ) {
+
+        experiencia -=
+            experienciaNecesaria;
+
+        nivelJugador++;
+        mejorasNivelPendientes++;
+
+        experienciaNecesaria =
+            calcularExperienciaNecesaria(
+                nivelJugador
+            );
+
+    }
+
+    actualizarHUDExperiencia();
+
+
+    if (
+        mejorasNivelPendientes > 0
+        &&
+        !nivelOverlayActivo
+        &&
+        !jugador.muriendo
+    ) {
+
+        abrirMejoraNivel();
+
+    }
+
+}
+
+
+function abrirMejoraNivel() {
+
+    if (
+        mejorasNivelPendientes <= 0
+        ||
+        nivelOverlayActivo
+    ) {
+        return;
+    }
+
+    nivelOverlayActivo = true;
+    juegoPausado = true;
+    teclas = {};
+
+    // Si se ganaron varios niveles de golpe, muestra primero
+    // el nivel más antiguo que todavía necesita elegir premio.
+    const nivelQueSePremia =
+        nivelJugador
+        - mejorasNivelPendientes
+        + 1;
+
+    nivelNuevo.textContent =
+        nivelQueSePremia;
+
+    nivelOverlay.classList.remove(
+        "oculto"
+    );
+
+}
+
+
+function aplicarMejoraNivel(tipoMejora) {
+
+    if (!nivelOverlayActivo) {
+        return;
+    }
+
+
+    if (tipoMejora === "vida") {
+
+        jugador.vidaMaxima += 20;
+
+        jugador.vida =
+            Math.min(
+                jugador.vida + 20,
+                jugador.vidaMaxima
+            );
+
+        hudVida.textContent =
+            jugador.vida;
+
+    } else if (tipoMejora === "velocidad") {
+
+        jugador.velocidad =
+            Math.round(
+                jugador.velocidad * 1.10 * 100
+            ) / 100;
+
+    } else if (tipoMejora === "energia") {
+
+        energiaMaxima += 15;
+
+        energiaActual =
+            Math.min(
+                energiaActual + 15,
+                energiaMaxima
+            );
+
+    }
+
+
+    // Pequeño estallido visual para confirmar la mejora elegida.
+    crearParticulas(
+        jugador.x,
+        jugador.y,
+        "#ffe58a",
+        24,
+        5,
+        5,
+        0.035
+    );
+
+
+    mejorasNivelPendientes--;
+    nivelOverlayActivo = false;
+
+    nivelOverlay.classList.add(
+        "oculto"
+    );
+
+
+    if (mejorasNivelPendientes > 0) {
+
+        abrirMejoraNivel();
+
+    } else {
+
+        juegoPausado = false;
+
+        // Evita que la energía recupere de golpe el tiempo
+        // que permanecimos leyendo el menú de nivel.
+        ultimoTiempoEnergia =
+            performance.now();
+
+        // Si la subida ocurrió justo al terminar una oleada,
+        // reiniciamos la espera para que el siguiente evento no
+        // ocurra inmediatamente después de cerrar este menú.
+        if (esperandoOleada) {
+            inicioEsperaOleada =
+                performance.now();
+        }
+
+    }
+
+}
+
+
+// ===========================================================
+// PARTÍCULAS DE COMBATE
+// ===========================================================
+// Son círculos pequeños dibujados directamente en el Canvas.
+// No requieren imágenes nuevas y se congelan cuando el juego se pausa.
+// ===========================================================
+
+function crearParticulas(
+    x,
+    y,
+    color,
+    cantidad,
+    fuerza,
+    tamaño,
+    desgaste
+) {
+
+    for (let i = 0; i < cantidad; i++) {
+
+        const angulo =
+            Math.random() * Math.PI * 2;
+
+        const velocidad =
+            fuerza * (0.45 + Math.random() * 0.75);
+
+        particulas.push({
+            x: x,
+            y: y,
+            velocidadX: Math.cos(angulo) * velocidad,
+            velocidadY: Math.sin(angulo) * velocidad,
+            tamaño: tamaño * (0.55 + Math.random() * 0.75),
+            color: color,
+            vida: 1,
+            desgaste: desgaste * (0.75 + Math.random() * 0.50)
+        });
+
+    }
+
+}
+
+
+function crearParticulasImpacto(x, y, tipoProyectil) {
+
+    let color = "#ffffff";
+
+    if (tipoProyectil === "escopeta") {
+        color = "#ffd36a";
+    }
+
+    if (tipoProyectil === "energia") {
+        color = "#39d9ff";
+    }
+
+    crearParticulas(
+        x,
+        y,
+        color,
+        7,
+        3.2,
+        3,
+        0.055
+    );
+
+}
+
+
+function crearParticulasMuerteEnemigo(x, y) {
+
+    crearParticulas(
+        x,
+        y,
+        "#ff5d68",
+        18,
+        4.5,
+        4,
+        0.035
+    );
+
+}
+
+
+function crearParticulasDañoJugador() {
+
+    crearParticulas(
+        jugador.x,
+        jugador.y,
+        "#ff4d88",
+        12,
+        3.8,
+        3.5,
+        0.045
+    );
+
+}
+
+
+function moverParticulas() {
+
+    for (
+        let i = particulas.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const particula =
+            particulas[i];
+
+        particula.x +=
+            particula.velocidadX;
+
+        particula.y +=
+            particula.velocidadY;
+
+        particula.velocidadX *= 0.95;
+        particula.velocidadY *= 0.95;
+
+        particula.vida -=
+            particula.desgaste;
+
+        if (particula.vida <= 0) {
+            particulas.splice(i, 1);
+        }
+
+    }
+
+}
+
+
+function dibujarParticulas() {
+
+    ctx.save();
+
+    particulas.forEach(function (particula) {
+
+        ctx.globalAlpha =
+            Math.max(0, particula.vida);
+
+        ctx.beginPath();
+
+        ctx.arc(
+            particula.x,
+            particula.y,
+            particula.tamaño,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            particula.color;
+
+        ctx.fill();
+
+    });
+
+    ctx.restore();
+
+}
 
 
 // ===============================
@@ -426,14 +874,31 @@ function iniciarJuego() {
 
     proyectiles = [];
     enemigos = [];
+    explosionesEnergia = [];
+    particulas = [];
 
     puntos = 0;
     hexaCores = 0;
-    experiencia = 0;
 
-    // Cada partida comienza con la energía llena
-    // y con la pistola seleccionada.
+    nivelJugador = 1;
+    experiencia = 0;
+    experienciaNecesaria =
+        calcularExperienciaNecesaria(
+            nivelJugador
+        );
+    mejorasNivelPendientes = 0;
+    nivelOverlayActivo = false;
+    nivelOverlay.classList.add("oculto");
+
+    // Cada partida nueva vuelve a las estadísticas base.
+    // Las mejoras compradas en la tienda duran durante la
+    // partida actual, pero se reinician al reintentar.
+    reiniciarEstadisticasArmas();
+
+    energiaMaxima = energiaMaximaBase;
+    regeneracionEnergia = regeneracionEnergiaBase;
     energiaActual = energiaMaxima;
+
     ultimoTiempoEnergia = performance.now();
     armaActual = "pistola";
     ultimoDisparo = 0;
@@ -466,8 +931,7 @@ function iniciarJuego() {
     hudHexa.textContent =
         hexaCores;
 
-    hudXP.textContent =
-        experiencia;
+    actualizarHUDExperiencia();
 
     juegoPausado = false;
     pausaOverlay.classList.add("oculto");
@@ -522,6 +986,7 @@ if (
     (tecla === "p" || tecla === "escape")
     && juegoActivo
     && !tiendaActiva
+    && !nivelOverlayActivo
     && !evento.repeat
 ) {
 
@@ -544,19 +1009,37 @@ document.addEventListener("keyup", function (evento) {
 // ===============================
 // MOUSE
 // ===============================
+// El canvas tiene una resolución interna de 1280 x 720, pero CSS
+// puede mostrarlo con otro tamaño dependiendo de la ventana.
+//
+// Por eso NO podemos usar directamente los píxeles de la pantalla.
+// Convertimos la posición real del mouse a las coordenadas internas
+// del canvas para que Ado dispare exactamente hacia donde apuntas.
 
-canvas.addEventListener("mousemove", function (evento) {
+function actualizarPosicionMouse(evento) {
 
     const rect =
         canvas.getBoundingClientRect();
 
+    const escalaX =
+        canvas.width / rect.width;
+
+    const escalaY =
+        canvas.height / rect.height;
+
     mouse.x =
-        evento.clientX -
-        rect.left;
+        (evento.clientX - rect.left)
+        * escalaX;
 
     mouse.y =
-        evento.clientY -
-        rect.top;
+        (evento.clientY - rect.top)
+        * escalaY;
+}
+
+
+canvas.addEventListener("mousemove", function (evento) {
+
+    actualizarPosicionMouse(evento);
 
 });
 
@@ -565,9 +1048,31 @@ canvas.addEventListener("mousemove", function (evento) {
 // DISPARAR
 // ===============================
 
-canvas.addEventListener("click", function () {
+canvas.addEventListener("click", function (evento) {
+
+    // Actualizamos también aquí por si el tamaño del canvas cambió
+    // o el usuario hace clic sin haber movido el mouse antes.
+    actualizarPosicionMouse(evento);
 
     disparar();
+
+});
+
+
+// ===========================================================
+// CLIC DERECHO - DETONACIÓN MANUAL DEL ARMA DE ENERGÍA
+// ===========================================================
+// El navegador normalmente abre su menú contextual con clic derecho.
+// Lo bloqueamos dentro del canvas para usar ese botón como habilidad.
+// Solo funciona cuando NÚCLEO SOBRECARGADO llegó al nivel 2.
+// ===========================================================
+canvas.addEventListener("contextmenu", function (evento) {
+
+    evento.preventDefault();
+
+    actualizarPosicionMouse(evento);
+
+    detonarUltimoProyectilEnergia();
 
 });
 
@@ -703,38 +1208,69 @@ function disparar() {
     // ===============================
     // PISTOLA
     // ===============================
-    // Dispara una sola bala.
-    // Daño, velocidad, cadencia y alcance salen
-    // del objeto armas.pistola.
+    // La mejora especial RÁFAGA GEMELA modifica cuántas balas
+    // salen con un solo clic. El costo y la cadencia siguen siendo
+    // los de UN disparo, aunque salgan 2 o 3 proyectiles.
 
     if (armaActual === "pistola") {
 
-        proyectiles.push({
+        let dispersionesPistola = [0];
 
-            x: jugador.x,
-            y: jugador.y,
+        if (arma.nivelEspecial === 1) {
 
-            radio: 6,
+            // Nivel 1: dos balas casi paralelas.
+            dispersionesPistola = [
+                -0.035,
+                0.035
+            ];
 
-            velocidadX:
-                Math.cos(angulo)
-                * arma.velocidad,
+        } else if (arma.nivelEspecial >= 2) {
 
-            velocidadY:
-                Math.sin(angulo)
-                * arma.velocidad,
+            // Nivel 2: tres balas con una apertura pequeña.
+            dispersionesPistola = [
+                -0.07,
+                0,
+                0.07
+            ];
 
-            daño:
-                arma.daño,
+        }
 
-            distanciaRecorrida: 0,
 
-            alcanceMaximo:
-                arma.alcance,
+        dispersionesPistola.forEach(
+            function (dispersion) {
 
-            tipo: "pistola"
+                const anguloBala =
+                    angulo + dispersion;
 
-        });
+                proyectiles.push({
+
+                    x: jugador.x,
+                    y: jugador.y,
+
+                    radio: 6,
+
+                    velocidadX:
+                        Math.cos(anguloBala)
+                        * arma.velocidad,
+
+                    velocidadY:
+                        Math.sin(anguloBala)
+                        * arma.velocidad,
+
+                    daño:
+                        arma.daño,
+
+                    distanciaRecorrida: 0,
+
+                    alcanceMaximo:
+                        arma.alcance,
+
+                    tipo: "pistola"
+
+                });
+
+            }
+        );
 
     }
 
@@ -742,21 +1278,32 @@ function disparar() {
     // ===============================
     // ESCOPETA
     // ===============================
-    // Dispara 3 perdigones en abanico.
-    // Cada perdigón usa el daño, velocidad y alcance
-    // configurados en armas.escopeta.
+    // Nivel 0: 3 perdigones.
+    // Nivel 1: 5 perdigones.
+    // Nivel 2: mantiene 5, pero cada perdigón puede golpear
+    // hasta 2 enemigos diferentes antes de desaparecer.
 
     else if (
         armaActual === "escopeta"
     ) {
 
-        // Ángulo de cada perdigón respecto al centro.
-        // Si luego quieres más dispersión, aumenta estos valores.
-        const dispersiones = [
+        let dispersiones = [
             -0.12,
             0,
             0.12
         ];
+
+        if (arma.nivelEspecial >= 1) {
+
+            dispersiones = [
+                -0.24,
+                -0.12,
+                0,
+                0.12,
+                0.24
+            ];
+
+        }
 
 
         dispersiones.forEach(
@@ -785,8 +1332,6 @@ function disparar() {
                         )
                         * arma.velocidad,
 
-                    // El daño configurado para la escopeta
-                    // se aplica a CADA perdigón.
                     daño:
                         arma.daño,
 
@@ -795,7 +1340,17 @@ function disparar() {
                     alcanceMaximo:
                         arma.alcance,
 
-                    tipo: "escopeta"
+                    tipo: "escopeta",
+
+                    // Evita que un perdigón perforante golpee varias
+                    // veces al MISMO enemigo mientras lo atraviesa.
+                    enemigosGolpeados: [],
+
+                    // Nivel 2 = puede dañar a dos enemigos distintos.
+                    impactosMaximos:
+                        arma.nivelEspecial >= 2
+                            ? 2
+                            : 1
 
                 });
 
@@ -808,20 +1363,28 @@ function disparar() {
     // ===============================
     // ENERGÍA
     // ===============================
-    // Disparo grande que atraviesa a todos los enemigos.
-    // También toma sus estadísticas directamente
-    // desde armas.energia.
+    // Siempre atraviesa enemigos.
+    // Nivel 1: el radio pasa de 10 a 13.5 (+35 %).
+    // Nivel 2: conserva ese tamaño y permite detonarlo manualmente
+    // con clic derecho. La detonación NO ocurre automáticamente.
 
     else if (
         armaActual === "energia"
     ) {
+
+        const radioEnergia =
+            arma.nivelEspecial >= 1
+                ? 13.5
+                : 10;
+
 
         proyectiles.push({
 
             x: jugador.x,
             y: jugador.y,
 
-            radio: 10,
+            radio:
+                radioEnergia,
 
             velocidadX:
                 Math.cos(angulo)
@@ -841,14 +1404,171 @@ function disparar() {
 
             tipo: "energia",
 
-            // Guarda qué enemigos ya fueron golpeados
-            // para que el mismo proyectil no haga daño
-            // varias veces al mismo enemigo mientras lo atraviesa.
             enemigosGolpeados: []
 
         });
 
     }
+
+}
+
+
+// ===========================================================
+// NÚCLEO SOBRECARGADO NIVEL 2 - DETONACIÓN MANUAL
+// ===========================================================
+// Solo se detona el proyectil de energía ACTIVO más reciente.
+// El proyectil desaparece al detonar y crea una explosión de área.
+// No consume energía adicional porque esa energía ya se gastó al
+// realizar el disparo con clic izquierdo.
+// ===========================================================
+
+function detonarUltimoProyectilEnergia() {
+
+    if (
+        !juegoActivo ||
+        juegoPausado ||
+        jugador.muriendo ||
+        armaActual !== "energia" ||
+        armas.energia.nivelEspecial < 2
+    ) {
+        return;
+    }
+
+
+    for (
+        let i = proyectiles.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const proyectil =
+            proyectiles[i];
+
+        if (
+            proyectil.tipo === "energia"
+        ) {
+
+            crearExplosionEnergia(
+                proyectil.x,
+                proyectil.y
+            );
+
+            proyectiles.splice(
+                i,
+                1
+            );
+
+            return;
+        }
+
+    }
+
+}
+
+
+function crearExplosionEnergia(x, y) {
+
+    const radioExplosion = 150;
+    const dañoExplosion = 35;
+
+
+    // Guardamos un efecto temporal para dibujarlo durante unos frames.
+    explosionesEnergia.push({
+        x: x,
+        y: y,
+        inicio: performance.now(),
+        duracion: 320,
+        radioMaximo: radioExplosion
+    });
+
+    // Partículas extra para que la detonación se sienta más fuerte.
+    crearParticulas(
+        x,
+        y,
+        "#39d9ff",
+        34,
+        7,
+        5,
+        0.03
+    );
+
+
+    enemigos.forEach(function (enemigo) {
+
+        if (enemigo.muriendo) {
+            return;
+        }
+
+        const distancia =
+            Math.hypot(
+                x - enemigo.x,
+                y - enemigo.y
+            );
+
+        if (
+            distancia
+            <=
+            radioExplosion + enemigo.radio
+        ) {
+
+            enemigo.vida -=
+                dañoExplosion;
+
+
+            // La explosión utiliza exactamente las mismas recompensas
+            // que una muerte causada por un proyectil normal.
+            if (
+                enemigo.vida <= 0
+                &&
+                !enemigo.muriendo
+            ) {
+
+                enemigo.muriendo =
+                    true;
+
+                enemigo.muerteInicio =
+                    performance.now();
+
+                enemigo.muerteHasta =
+                    enemigo.muerteInicio + 700;
+
+                enemigo.direccionMuerte =
+                    jugador.x > enemigo.x
+                        ? "right"
+                        : "left";
+
+
+                enemigosEliminadosOleada++;
+
+                hudEnemigos.textContent =
+                    enemigosPorOleada
+                    -
+                    enemigosEliminadosOleada;
+
+
+                puntos += 100;
+
+                hudPuntos.textContent =
+                    puntos;
+
+
+                hexaCores += 1;
+
+                hudHexa.textContent =
+                    hexaCores;
+
+                agregarExperiencia(10);
+
+                crearParticulasMuerteEnemigo(
+                    enemigo.x,
+                    enemigo.y
+                );
+
+            }
+
+        }
+
+    });
 
 }
 
@@ -1207,21 +1927,25 @@ for (
 
 
         // ===============================
-        // ENERGÍA: EVITAR GOLPEAR DOS
-        // VECES AL MISMO ENEMIGO
+        // PROYECTILES QUE PUEDEN ATRAVESAR
         // ===============================
+        // Energía siempre atraviesa. En la escopeta esta lista
+        // también se usa en el nivel especial 2 para que un mismo
+        // perdigón no golpee dos veces al mismo enemigo.
 
         if (
-            proyectil.tipo === "energia"
+            (
+                proyectil.tipo === "energia"
+                ||
+                proyectil.tipo === "escopeta"
+            )
+            &&
+            proyectil.enemigosGolpeados
+            &&
+            proyectil.enemigosGolpeados
+                .includes(enemigo)
         ) {
-
-            if (
-                proyectil.enemigosGolpeados
-                    .includes(enemigo)
-            ) {
-                continue;
-            }
-
+            continue;
         }
 
 
@@ -1247,6 +1971,12 @@ for (
             enemigo.vida -=
                 proyectil.daño;
 
+            crearParticulasImpacto(
+                proyectil.x,
+                proyectil.y,
+                proyectil.tipo
+            );
+
 
             // ===============================
             // PROYECTIL DE ENERGÍA
@@ -1256,18 +1986,47 @@ for (
                 proyectil.tipo === "energia"
             ) {
 
-                // Recordar que este enemigo
-                // ya recibió el impacto.
                 proyectil.enemigosGolpeados
                     .push(enemigo);
 
-                // NO eliminamos el proyectil.
-                // Continúa atravesando enemigos.
+                // Energía nunca desaparece por impacto normal.
 
             }
 
             // ===============================
-            // PISTOLA / ESCOPETA
+            // ESCOPETA
+            // ===============================
+            // Normalmente desaparece al primer enemigo.
+            // Con LLUVIA DE PLOMO nivel 2 puede golpear a dos
+            // enemigos diferentes antes de desaparecer.
+
+            else if (
+                proyectil.tipo === "escopeta"
+            ) {
+
+                proyectil.enemigosGolpeados
+                    .push(enemigo);
+
+                if (
+                    proyectil.enemigosGolpeados.length
+                    >=
+                    proyectil.impactosMaximos
+                ) {
+
+                    proyectiles.splice(
+                        i,
+                        1
+                    );
+
+                    proyectilEliminado =
+                        true;
+
+                }
+
+            }
+
+            // ===============================
+            // PISTOLA
             // ===============================
 
             else {
@@ -1326,28 +2085,29 @@ for (
                 // Recompensas
                 hexaCores += 1;
 
-                experiencia += 10;
-
-
                 hudHexa.textContent =
                     hexaCores;
 
-                hudXP.textContent =
-                    experiencia;
+                agregarExperiencia(10);
+
+                crearParticulasMuerteEnemigo(
+                    enemigo.x,
+                    enemigo.y
+                );
 
             }
 
 
-            // Pistola y escopeta desaparecen
-            // al primer impacto.
+            // Si el proyectil alcanzó su máximo de impactos,
+            // dejamos de buscar más enemigos en este frame.
             if (
                 proyectilEliminado
             ) {
                 break;
             }
 
-            // Energía NO hace break.
-            // Sigue buscando enemigos.
+            // Energía y la escopeta perforante pueden seguir
+            // buscando otros enemigos mientras sigan activos.
         }
 
     }
@@ -1398,6 +2158,8 @@ for (
 
                 hudVida.textContent =
                     jugador.vida;
+
+                crearParticulasDañoJugador();
 
                 // IMPORTANTE:
                 // conserva la corrección que hicimos al HIT de Ado.
@@ -1745,6 +2507,103 @@ function dibujarProyectiles() {
 
         }
     );
+}
+
+
+// ===========================================================
+// DIBUJAR EXPLOSIONES DE ENERGÍA
+// ===========================================================
+// Es un efecto visual corto. El daño ya se aplica en el momento
+// exacto del clic derecho dentro de crearExplosionEnergia().
+// ===========================================================
+
+function dibujarExplosionesEnergia(tiempo) {
+
+    for (
+        let i = explosionesEnergia.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const explosion =
+            explosionesEnergia[i];
+
+        const progreso =
+            (tiempo - explosion.inicio)
+            /
+            explosion.duracion;
+
+
+        if (progreso >= 1) {
+
+            explosionesEnergia.splice(
+                i,
+                1
+            );
+
+            continue;
+        }
+
+
+        const radioActual =
+            explosion.radioMaximo
+            *
+            (
+                0.25
+                +
+                0.75 * progreso
+            );
+
+
+        ctx.save();
+
+        ctx.globalAlpha =
+            1 - progreso;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            explosion.x,
+            explosion.y,
+            radioActual,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            "rgba(57, 217, 255, 0.22)";
+
+        ctx.fill();
+
+        ctx.lineWidth =
+            5 - 3 * progreso;
+
+        ctx.strokeStyle =
+            "#9eeaff";
+
+        ctx.stroke();
+
+
+        // Destello central para que la detonación se note mejor.
+        ctx.beginPath();
+
+        ctx.arc(
+            explosion.x,
+            explosion.y,
+            Math.max(4, 18 * (1 - progreso)),
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            "white";
+
+        ctx.fill();
+
+        ctx.restore();
+
+    }
+
 }
 
 // ===============================
@@ -2305,12 +3164,457 @@ function dibujarMensajeOleada(tiempo) {
 
 }
 
+// ===========================================================
+// TARJETAS DE MEJORA DE TODAS LAS ARMAS
+// ===========================================================
+// La tienda muestra PISTOLA, ESCOPETA y ENERGÍA al mismo tiempo.
+// Cada botón guarda en data-arma qué arma debe mejorar, así que
+// el jugador puede invertir en cualquiera sin tenerla equipada.
+// ===========================================================
+
+function calcularCadenciaMejorada(cadenciaActual) {
+
+    // Reducir 10 % la cadencia hace que el arma dispare más rápido.
+    // El límite evita llegar a valores exageradamente pequeños.
+    return Math.max(
+        120,
+        Math.round(cadenciaActual * 0.90)
+    );
+
+}
+
+
+function calcularAlcanceMejorado(alcanceActual) {
+
+    return Math.round(
+        alcanceActual * 1.15
+    );
+
+}
+
+
+function obtenerInfoMejoraEspecial(claveArma) {
+
+    const arma =
+        armas[claveArma];
+
+    const nivel =
+        arma.nivelEspecial;
+
+
+    if (claveArma === "pistola") {
+
+        if (nivel === 0) {
+            return {
+                titulo: "RÁFAGA GEMELA",
+                descripcion: "Nivel 1: cada clic dispara dos balas casi paralelas.",
+                actual: "1 bala",
+                siguiente: "2 balas"
+            };
+        }
+
+        if (nivel === 1) {
+            return {
+                titulo: "RÁFAGA GEMELA",
+                descripcion: "Nivel 2: añade una tercera bala a la ráfaga.",
+                actual: "2 balas",
+                siguiente: "3 balas"
+            };
+        }
+
+        return {
+            titulo: "RÁFAGA GEMELA",
+            descripcion: "La pistola dispara tres balas por cada clic.",
+            actual: "3 balas",
+            siguiente: "MÁXIMO"
+        };
+
+    }
+
+
+    if (claveArma === "escopeta") {
+
+        if (nivel === 0) {
+            return {
+                titulo: "LLUVIA DE PLOMO",
+                descripcion: "Nivel 1: aumenta la descarga de tres a cinco perdigones.",
+                actual: "3 perdigones",
+                siguiente: "5 perdigones"
+            };
+        }
+
+        if (nivel === 1) {
+            return {
+                titulo: "LLUVIA DE PLOMO",
+                descripcion: "Nivel 2: cada perdigón puede atravesar un enemigo y golpear a un segundo.",
+                actual: "5 perdigones",
+                siguiente: "5 + perforación"
+            };
+        }
+
+        return {
+            titulo: "LLUVIA DE PLOMO",
+            descripcion: "Cinco perdigones; cada uno puede dañar hasta dos enemigos diferentes.",
+            actual: "5 + perforación",
+            siguiente: "MÁXIMO"
+        };
+
+    }
+
+
+    // ENERGÍA
+    if (nivel === 0) {
+        return {
+            titulo: "NÚCLEO SOBRECARGADO",
+            descripcion: "Nivel 1: aumenta un 35 % el tamaño del proyectil de energía.",
+            actual: "Tamaño normal",
+            siguiente: "+35 % tamaño"
+        };
+    }
+
+    if (nivel === 1) {
+        return {
+            titulo: "NÚCLEO SOBRECARGADO",
+            descripcion: "Nivel 2: desbloquea la detonación manual del proyectil con clic derecho.",
+            actual: "+35 % tamaño",
+            siguiente: "Detonación manual"
+        };
+    }
+
+    return {
+        titulo: "NÚCLEO SOBRECARGADO",
+        descripcion: "Clic izquierdo dispara y clic derecho detona el proyectil activo más reciente.",
+        actual: "+35 % + detonación",
+        siguiente: "MÁXIMO"
+    };
+
+}
+
+
+function crearTarjetaMejoraEspecial(claveArma) {
+
+    const arma =
+        armas[claveArma];
+
+    const nivel =
+        arma.nivelEspecial;
+
+    const maximo =
+        nivel >= 2;
+
+    const precio =
+        nivel === 0
+            ? 8
+            : 12;
+
+    const info =
+        obtenerInfoMejoraEspecial(
+            claveArma
+        );
+
+
+    return `
+        <div class="itemTienda tarjetaMejoraArma tarjetaMejoraEspecial ${maximo ? "especialMaxima" : ""}">
+
+            <div class="infoItemTienda">
+
+                <h4>${info.titulo}</h4>
+
+                <p class="nivelEspecialTienda">
+                    NIVEL ${nivel} / 2
+                </p>
+
+                <p class="descripcionItem">
+                    ${info.descripcion}
+                </p>
+
+                <p class="cambioEstadisticaTienda cambioEspecialTienda">
+                    <strong>${info.actual}</strong>
+                    ${maximo ? "" : "→"}
+                    <strong>${maximo ? "" : info.siguiente}</strong>
+                </p>
+
+                <p class="precioItem">
+                    ${maximo ? "MEJORA MÁXIMA" : `◇ ${precio} Hexa Cores`}
+                </p>
+
+                <button
+                    class="btnComprarMejoraArma"
+                    data-arma="${claveArma}"
+                    data-mejora="especial"
+                    ${maximo ? "disabled" : ""}
+                >
+                    ${maximo ? "MÁXIMO" : "MEJORAR"}
+                </button>
+
+            </div>
+
+        </div>
+    `;
+
+}
+
+
+function crearTarjetaMejoraArma(
+    claveArma,
+    tipoMejora,
+    titulo,
+    descripcion,
+    etiquetaValor,
+    valorActual,
+    valorNuevo,
+    precio
+) {
+
+    return `
+        <div class="itemTienda tarjetaMejoraArma">
+
+            <div class="infoItemTienda">
+
+                <h4>${titulo}</h4>
+
+                <p class="descripcionItem">
+                    ${descripcion}
+                </p>
+
+                <p class="cambioEstadisticaTienda">
+                    ${etiquetaValor}:
+                    <strong>${valorActual}</strong>
+                    →
+                    <strong>${valorNuevo}</strong>
+                </p>
+
+                <p class="precioItem">
+                    ◇ ${precio} Hexa Cores
+                </p>
+
+                <button
+                    class="btnComprarMejoraArma"
+                    data-arma="${claveArma}"
+                    data-mejora="${tipoMejora}"
+                >
+                    COMPRAR
+                </button>
+
+            </div>
+
+        </div>
+    `;
+
+}
+
+
+function actualizarTarjetasMejorasArmas() {
+
+    if (!contenedorMejorasArmas) {
+        return;
+    }
+
+    contenedorMejorasArmas.innerHTML = "";
+
+
+    Object.keys(armas).forEach(function (claveArma) {
+
+        const arma = armas[claveArma];
+        const precioMejora = 5;
+
+        const bloqueArma =
+            document.createElement("section");
+
+        bloqueArma.className =
+            "bloqueArmaTienda";
+
+
+        // Solo sirve como referencia visual. NO limita las compras.
+        const textoEquipada =
+            claveArma === armaActual
+                ? '<span class="etiquetaEquipada">EQUIPADA</span>'
+                : "";
+
+
+        const nuevaCadencia =
+            calcularCadenciaMejorada(
+                arma.cadencia
+            );
+
+        const nuevoAlcance =
+            calcularAlcanceMejorado(
+                arma.alcance
+            );
+
+
+        bloqueArma.innerHTML = `
+
+            <div class="encabezadoArmaTienda">
+
+                <div
+                    class="spriteArmaTienda"
+                    style="background-image: url('${arma.sprite.src}')"
+                    aria-label="Sprite de ${arma.nombre}"
+                ></div>
+
+                <div>
+                    <h3>${arma.nombre}</h3>
+                    ${textoEquipada}
+                </div>
+
+            </div>
+
+            <div class="gridMejorasArma">
+
+                ${crearTarjetaMejoraArma(
+                    claveArma,
+                    "daño",
+                    "MUNICIÓN REFORZADA",
+                    "Aumenta en 5 puntos el daño de cada proyectil.",
+                    "Daño",
+                    arma.daño,
+                    arma.daño + 5,
+                    precioMejora
+                )}
+
+                ${crearTarjetaMejoraArma(
+                    claveArma,
+                    "cadencia",
+                    "MECANISMO ACELERADO",
+                    "Reduce un 10 % el tiempo entre disparos.",
+                    "Cadencia",
+                    arma.cadencia + " ms",
+                    nuevaCadencia + " ms",
+                    precioMejora
+                )}
+
+                ${crearTarjetaMejoraArma(
+                    claveArma,
+                    "alcance",
+                    "CAÑÓN MEJORADO",
+                    "Aumenta un 15 % la distancia máxima del proyectil.",
+                    "Alcance",
+                    arma.alcance,
+                    nuevoAlcance,
+                    precioMejora
+                )}
+
+                ${crearTarjetaMejoraEspecial(
+                    claveArma
+                )}
+
+            </div>
+        `;
+
+        contenedorMejorasArmas.appendChild(
+            bloqueArma
+        );
+
+    });
+
+}
+
+
+function comprarMejoraArma(
+    claveArma,
+    tipoMejora
+) {
+
+    const arma =
+        armas[claveArma];
+
+    if (!arma) {
+        return;
+    }
+
+
+    let precioMejora = 5;
+
+
+    // =======================================================
+    // MEJORA ESPECIAL: SOLO DOS NIVELES
+    // =======================================================
+    if (tipoMejora === "especial") {
+
+        if (arma.nivelEspecial >= 2) {
+            alert("Esta mejora especial ya está al máximo.");
+            return;
+        }
+
+        precioMejora =
+            arma.nivelEspecial === 0
+                ? 8
+                : 12;
+
+    }
+
+
+    // Antes de cobrar revisamos si la cadencia llegó a su límite.
+    if (tipoMejora === "cadencia") {
+
+        const nuevaCadencia =
+            calcularCadenciaMejorada(
+                arma.cadencia
+            );
+
+        if (nuevaCadencia === arma.cadencia) {
+            alert("Esta arma ya alcanzó el límite de cadencia.");
+            return;
+        }
+
+    }
+
+
+    if (hexaCores < precioMejora) {
+        alert("No tienes suficientes Hexa Cores.");
+        return;
+    }
+
+
+    hexaCores -=
+        precioMejora;
+
+
+    if (tipoMejora === "daño") {
+
+        arma.daño += 5;
+
+    } else if (tipoMejora === "cadencia") {
+
+        arma.cadencia =
+            calcularCadenciaMejorada(
+                arma.cadencia
+            );
+
+    } else if (tipoMejora === "alcance") {
+
+        arma.alcance =
+            calcularAlcanceMejorado(
+                arma.alcance
+            );
+
+    } else if (tipoMejora === "especial") {
+
+        arma.nivelEspecial++;
+
+    }
+
+
+    hudHexa.textContent =
+        hexaCores;
+
+    // Volvemos a dibujar las tarjetas para enseñar al instante
+    // el valor actualizado y el siguiente nivel disponible.
+    actualizarTarjetasMejorasArmas();
+
+}
+
+
 function abrirTienda() {
 
     tiendaActiva = true;
     juegoPausado = true;
 
     teclas = {};
+
+    // Mostrar las mejoras de las tres armas antes de abrir la tienda.
+    actualizarTarjetasMejorasArmas();
 
     tiendaOverlay.classList.remove("oculto");
 
@@ -2445,6 +3749,8 @@ dibujarMapa();
 
         revisarColisiones();
 
+        moverParticulas();
+
 
         // COMPROBAR SI TERMINÓ LA OLEADA
 
@@ -2507,6 +3813,10 @@ dibujarMapa();
 
     dibujarProyectiles();
 
+    dibujarExplosionesEnergia(tiempo);
+
+    dibujarParticulas();
+
     dibujarMensajeOleada(tiempo);
 
     dibujarArmaActual(tiempo);
@@ -2545,6 +3855,8 @@ function iniciarMuerte() {
 function terminarJuego() {
 
     juegoActivo = false;
+    nivelOverlayActivo = false;
+    nivelOverlay.classList.add("oculto");
 
     juego.classList.add(
         "oculto"
@@ -2580,6 +3892,8 @@ btnMenu.addEventListener("click", function () {
     teclas = {};
 
     pausaOverlay.classList.add("oculto");
+    nivelOverlay.classList.add("oculto");
+    nivelOverlayActivo = false;
     gameOver.classList.add("oculto");
     juego.classList.add("oculto");
 
@@ -2627,6 +3941,125 @@ btnComprarBolillo.addEventListener("click", function () {
 
 });
 
+
+// ===========================================================
+// TIENDA - BATERÍA HEXA
+// ===========================================================
+// Cuesta 4 Hexa Cores.
+// Aumenta la energía máxima en 20 puntos.
+//
+// También entrega esos 20 puntos en el momento de la compra,
+// para que el aumento de capacidad se note inmediatamente.
+// ===========================================================
+
+btnComprarBateria.addEventListener("click", function () {
+
+    const precioBateria = 4;
+    const aumentoEnergia = 20;
+
+    if (hexaCores < precioBateria) {
+        alert("No tienes suficientes Hexa Cores.");
+        return;
+    }
+
+    hexaCores -= precioBateria;
+
+    energiaMaxima +=
+        aumentoEnergia;
+
+    energiaActual =
+        Math.min(
+            energiaActual + aumentoEnergia,
+            energiaMaxima
+        );
+
+    hudHexa.textContent =
+        hexaCores;
+
+});
+
+
+// ===========================================================
+// TIENDA - CATALIZADOR
+// ===========================================================
+// Cuesta 5 Hexa Cores.
+// Aumenta permanentemente durante ESTA partida la velocidad
+// de regeneración de energía en 2 puntos por segundo.
+//
+// Ejemplo:
+// 8/s -> 10/s -> 12/s -> 14/s ...
+// ===========================================================
+
+btnComprarCatalizador.addEventListener("click", function () {
+
+    const precioCatalizador = 5;
+    const aumentoRegeneracion = 2;
+
+    if (hexaCores < precioCatalizador) {
+        alert("No tienes suficientes Hexa Cores.");
+        return;
+    }
+
+    hexaCores -= precioCatalizador;
+
+    regeneracionEnergia +=
+        aumentoRegeneracion;
+
+    hudHexa.textContent =
+        hexaCores;
+
+});
+
+// ===========================================================
+// TIENDA - MEJORAS DE CUALQUIER ARMA
+// ===========================================================
+// Usamos un solo listener para todos los botones generados.
+// data-arma indica PISTOLA / ESCOPETA / ENERGÍA y data-mejora
+// indica qué estadística se debe modificar.
+// ===========================================================
+
+contenedorMejorasArmas.addEventListener("click", function (evento) {
+
+    const boton =
+        evento.target.closest(
+            ".btnComprarMejoraArma"
+        );
+
+    if (!boton) {
+        return;
+    }
+
+    const claveArma =
+        boton.dataset.arma;
+
+    const tipoMejora =
+        boton.dataset.mejora;
+
+    comprarMejoraArma(
+        claveArma,
+        tipoMejora
+    );
+
+});
+
+
+// ===========================================================
+// ELEGIR PREMIO DE SUBIDA DE NIVEL
+// ===========================================================
+
+opcionesNivel.forEach(function (boton) {
+
+    boton.addEventListener("click", function () {
+
+        aplicarMejoraNivel(
+            boton.dataset.mejoraNivel
+        );
+
+    });
+
+});
+
+
 btnMenuPausa.addEventListener("click", function () {
 
     juegoActivo = false;
@@ -2635,6 +4068,8 @@ btnMenuPausa.addEventListener("click", function () {
     teclas = {};
 
     pausaOverlay.classList.add("oculto");
+    nivelOverlay.classList.add("oculto");
+    nivelOverlayActivo = false;
     juego.classList.add("oculto");
     gameOver.classList.add("oculto");
 
