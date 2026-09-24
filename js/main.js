@@ -142,6 +142,44 @@ const bichoAttackRight = new Image();
 bichoAttackRight.src =
     "assets/sprites/enemies/bicho-normal/attack-right.png";
 
+    // ===============================
+    // SPRITES ENEMIGO - BICHO RANGER
+    // ===============================
+
+const rangerIdleLeft = new Image();
+rangerIdleLeft.src =
+    "assets/sprites/enemies/bicho-ranger/idle-right.png";
+
+const rangerIdleRight = new Image();
+rangerIdleRight.src =
+    "assets/sprites/enemies/bicho-ranger/idle-left.png";
+
+
+const rangerAttackLeft = new Image();
+rangerAttackLeft.src =
+    "assets/sprites/enemies/bicho-ranger/attack-right.png";
+
+const rangerAttackRight = new Image();
+rangerAttackRight.src =
+    "assets/sprites/enemies/bicho-ranger/attack-left.png";
+
+
+const rangerHitLeft = new Image();
+rangerHitLeft.src =
+    "assets/sprites/enemies/bicho-ranger/hit-right.png";
+
+const rangerHitRight = new Image();
+rangerHitRight.src =
+    "assets/sprites/enemies/bicho-ranger/hit-left.png";
+
+
+const rangerDeathLeft = new Image();
+rangerDeathLeft.src =
+    "assets/sprites/enemies/bicho-ranger/death-right.png";
+
+const rangerDeathRight = new Image();
+rangerDeathRight.src =
+    "assets/sprites/enemies/bicho-ranger/death-left.png";
 
 // ===============================
 // SPRITES DE ARMAS - INDICADOR
@@ -263,6 +301,7 @@ const datosAdo = {
 let jugador;
 
 let proyectiles = [];
+let proyectilesEnemigos = [];
 let enemigos = [];
 
 let teclas = {};
@@ -425,6 +464,7 @@ function iniciarJuego() {
     };
 
     proyectiles = [];
+    proyectilesEnemigos = [];
     enemigos = [];
 
     puntos = 0;
@@ -1028,6 +1068,8 @@ function crearEnemigo() {
 
     enemigos.push({
 
+        tipo: "normal",
+
         x: x,
 
         y: y,
@@ -1042,6 +1084,95 @@ function crearEnemigo() {
 
 }
 
+// ===============================
+// GENERAR BICHO RANGER
+// ===============================
+
+function crearEnemigoRanger() {
+
+    let x;
+    let y;
+
+    const lado =
+        Math.floor(Math.random() * 4);
+
+    const margen = 100;
+
+    if (lado === 0) {
+
+        x =
+            Math.random()
+            * (canvas.width - margen * 2)
+            + margen;
+
+        y = margen;
+
+    }
+
+    if (lado === 1) {
+
+        x =
+            canvas.width - margen;
+
+        y =
+            Math.random()
+            * (canvas.height - margen * 2)
+            + margen;
+
+    }
+
+    if (lado === 2) {
+
+        x =
+            Math.random()
+            * (canvas.width - margen * 2)
+            + margen;
+
+        y =
+            canvas.height - margen;
+
+    }
+
+    if (lado === 3) {
+
+        x = margen;
+
+        y =
+            Math.random()
+            * (canvas.height - margen * 2)
+            + margen;
+
+    }
+
+    enemigos.push({
+
+        tipo: "ranger",
+
+        x: x,
+        y: y,
+
+        radio: 22,
+
+        velocidad: 0,
+
+        vida: 45,
+
+        proximoDisparo: 0,
+
+        atacandoHasta: 0,
+
+        hitHasta: 0,
+
+        muriendo: false,
+
+        direccion:
+            jugador.x > x
+                ? "right"
+                : "left"
+
+    });
+
+}
 
 // ===============================
 // MOVER ENEMIGOS
@@ -1055,6 +1186,55 @@ function moverEnemigos() {
         if (enemigo.muriendo) {
             return;
         }
+
+        // Actualizar hacia qué lado mira.
+        if (jugador.x >= enemigo.x) {
+            enemigo.direccion = "right";
+        } else {
+            enemigo.direccion = "left";
+        }
+
+        // ===============================
+// COMPORTAMIENTO DEL RANGER
+// ===============================
+
+if (enemigo.tipo === "ranger") {
+
+    const ahora =
+        performance.now();
+
+    // Esperar un poco antes del primer ataque
+    if (enemigo.proximoDisparo === 0) {
+
+        enemigo.proximoDisparo =
+            ahora + 1200;
+
+        return;
+    }
+
+    // Iniciar ataque
+    if (
+        ahora >= enemigo.proximoDisparo
+        &&
+        ahora >= (enemigo.atacandoHasta || 0)
+    ) {
+
+        enemigo.direccionAtaque =
+            enemigo.direccion;
+
+        enemigo.atacandoHasta =
+            ahora + 500;
+
+            dispararAcidoRanger(enemigo);
+
+        // Aproximadamente 1.8 segundos
+        // entre ataques.
+        enemigo.proximoDisparo =
+            ahora + 1800;
+    }
+
+    return;
+}
 
         // Mientras reproduce su ataque se queda quieto.
         if (
@@ -1106,6 +1286,55 @@ function moverEnemigos() {
 
     });
 
+}
+
+// ===============================
+// DISPARO DE ÁCIDO DEL RANGER
+// ===============================
+
+function dispararAcidoRanger(enemigo) {
+
+    const diferenciaX =
+        jugador.x - enemigo.x;
+
+    const diferenciaY =
+        jugador.y - enemigo.y;
+
+    const angulo =
+        Math.atan2(
+            diferenciaY,
+            diferenciaX
+        );
+
+    const velocidadAcido = 5;
+
+    const separacion =
+        enemigo.radio + 12;
+
+    proyectilesEnemigos.push({
+
+        x:
+            enemigo.x +
+            Math.cos(angulo) * separacion,
+
+        y:
+            enemigo.y +
+            Math.sin(angulo) * separacion,
+
+        velocidadX:
+            Math.cos(angulo)
+            * velocidadAcido,
+
+        velocidadY:
+            Math.sin(angulo)
+            * velocidadAcido,
+
+        radio: 8,
+
+        daño: 10,
+
+        tipo: "acido"
+    });
 }
 
 // ===============================
@@ -1167,6 +1396,78 @@ function moverProyectiles() {
 
 
 // ===============================
+// MOVER PROYECTILES DEL RANGER
+// ===============================
+
+function moverProyectilesEnemigos() {
+
+    for (
+        let i = proyectilesEnemigos.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const proyectil =
+            proyectilesEnemigos[i];
+
+        proyectil.x +=
+            proyectil.velocidadX;
+
+        proyectil.y +=
+            proyectil.velocidadY;
+
+        const fueraDelCanvas =
+            proyectil.x < -30 ||
+            proyectil.x > canvas.width + 30 ||
+            proyectil.y < -30 ||
+            proyectil.y > canvas.height + 30;
+
+        if (fueraDelCanvas) {
+
+            proyectilesEnemigos.splice(
+                i,
+                1
+            );
+        }
+    }
+}
+
+
+// ===============================
+// DIBUJAR ÁCIDO DEL RANGER
+// ===============================
+
+function dibujarProyectilesEnemigos() {
+
+    proyectilesEnemigos.forEach(
+        function (proyectil) {
+
+            ctx.save();
+
+            ctx.beginPath();
+
+            ctx.arc(
+                proyectil.x,
+                proyectil.y,
+                proyectil.radio,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fillStyle = "#7CFF00";
+
+            ctx.shadowColor = "#7CFF00";
+            ctx.shadowBlur = 14;
+
+            ctx.fill();
+
+            ctx.restore();
+        }
+    );
+}
+
+
+// ===============================
 // COLISIONES
 // ===============================
 
@@ -1204,6 +1505,7 @@ for (
         if (enemigo.muriendo) {
             continue;
         }
+    
 
 
         // ===============================
@@ -1354,12 +1656,83 @@ for (
 
 }
 
+// ===============================
+// PROYECTILES ENEMIGOS VS JUGADOR
+// ===============================
+
+for (
+    let i = proyectilesEnemigos.length - 1;
+    i >= 0;
+    i--
+) {
+
+    const proyectil =
+        proyectilesEnemigos[i];
+
+    const distancia =
+        Math.hypot(
+            proyectil.x - jugador.x,
+            proyectil.y - jugador.y
+        );
+
+    if (
+        distancia <
+        proyectil.radio + jugador.radio
+    ) {
+
+        // Quitar vida
+        jugador.vida -=
+            proyectil.daño;
+
+        if (jugador.vida < 0) {
+            jugador.vida = 0;
+        }
+
+        hudVida.textContent =
+            jugador.vida;
+
+
+        // Animación de daño de Ado
+        const ahora =
+            performance.now();
+
+        if (
+            ahora >= jugador.hitHasta
+        ) {
+
+            jugador.hitInicio =
+                ahora;
+
+            jugador.hitHasta =
+                ahora + 440;
+        }
+
+
+        // El proyectil desaparece al impactar
+        proyectilesEnemigos.splice(
+            i,
+            1
+        );
+
+
+        // Si Ado se queda sin vida
+        if (jugador.vida <= 0) {
+
+            iniciarMuerte();
+        }
+    }
+}
 
     // ===============================
     // JUGADOR VS ENEMIGOS
     // ===============================
 
     enemigos.forEach(function (enemigo) {
+
+            // SOLO el bicho normal hace daño cuerpo a cuerpo
+    if (enemigo.tipo !== "normal") {
+        return;
+    }
 
         // Un enemigo muerto ya no puede atacar.
         if (enemigo.muriendo) {
@@ -1751,6 +2124,195 @@ function dibujarProyectiles() {
 // DIBUJAR ENEMIGOS
 // ===============================
 
+// ===============================
+// DIBUJAR BICHO RANGER
+// ===============================
+
+function dibujarRanger(enemigo, tiempo, indice) {
+
+    let sprite;
+    let cantidadFrames = 5;
+    let frameActual = 0;
+
+    // ===============================
+    // MUERTE
+    // ===============================
+
+    if (enemigo.muriendo) {
+
+        if (enemigo.direccionMuerte === "right") {
+            sprite = rangerDeathRight;
+        } else {
+            sprite = rangerDeathLeft;
+        }
+
+        if (tiempo >= enemigo.muerteHasta) {
+
+            enemigos.splice(
+                indice,
+                1
+            );
+
+            return;
+        }
+
+        const tiempoMuerte =
+            tiempo - enemigo.muerteInicio;
+
+        frameActual =
+            Math.min(
+                Math.floor(tiempoMuerte / 140),
+                cantidadFrames - 1
+            );
+    }
+
+    // ===============================
+    // RECIBIENDO DAÑO
+    // ===============================
+
+    else if (
+        tiempo <
+        (enemigo.hitHasta || 0)
+    ) {
+
+        if (jugador.x > enemigo.x) {
+            sprite = rangerHitRight;
+        } else {
+            sprite = rangerHitLeft;
+        }
+
+        const tiempoHit =
+            300 -
+            (
+                enemigo.hitHasta -
+                tiempo
+            );
+
+        frameActual =
+            Math.min(
+                Math.floor(tiempoHit / 60),
+                cantidadFrames - 1
+            );
+    }
+
+    // ===============================
+    // ATAQUE
+    // ===============================
+
+    else if (
+        tiempo <
+        (enemigo.atacandoHasta || 0)
+    ) {
+
+        if (enemigo.direccionAtaque === "right") {
+            sprite = rangerAttackRight;
+        } else {
+            sprite = rangerAttackLeft;
+        }
+
+        const tiempoAtaque =
+            500 -
+            (
+                enemigo.atacandoHasta -
+                tiempo
+            );
+
+        frameActual =
+            Math.min(
+                Math.floor(tiempoAtaque / 100),
+                cantidadFrames - 1
+            );
+    }
+
+    // ===============================
+    // IDLE
+    // ===============================
+
+    else {
+
+        if (jugador.x > enemigo.x) {
+
+            sprite = rangerIdleRight;
+
+            enemigo.direccion =
+                "right";
+
+        } else {
+
+            sprite = rangerIdleLeft;
+
+            enemigo.direccion =
+                "left";
+        }
+
+        frameActual =
+            Math.floor(
+                tiempo / 180
+            )
+            %
+            cantidadFrames;
+    }
+
+
+    // Si todavía no cargó el sprite
+    if (
+        !sprite.complete ||
+        sprite.naturalWidth === 0
+    ) {
+
+        ctx.beginPath();
+
+        ctx.arc(
+            enemigo.x,
+            enemigo.y,
+            enemigo.radio,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = "#65ff38";
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    const anchoFrame =
+        sprite.naturalWidth /
+        cantidadFrames;
+
+    const altoFrame =
+        sprite.naturalHeight;
+
+
+    const altoSprite = 110;
+
+    const anchoSprite =
+        altoSprite *
+        (
+            anchoFrame /
+            altoFrame
+        );
+
+
+    ctx.drawImage(
+        sprite,
+
+        frameActual * anchoFrame,
+        0,
+
+        anchoFrame,
+        altoFrame,
+
+        enemigo.x - anchoSprite / 2,
+        enemigo.y - altoSprite / 2,
+
+        anchoSprite,
+        altoSprite
+    );
+}
+
 function dibujarEnemigos() {
 
     const tiempo =
@@ -1764,6 +2326,17 @@ function dibujarEnemigos() {
 
         const enemigo =
             enemigos[i];
+
+            if (enemigo.tipo === "ranger") {
+
+    dibujarRanger(
+        enemigo,
+        tiempo,
+        i
+    );
+
+    continue;
+}
 
         let sprite;
         let cantidadFrames;
@@ -2420,26 +2993,46 @@ dibujarMapa();
 
         // GENERAR ENEMIGOS
 
-        if (
-            !esperandoOleada
-            &&
-            enemigosGenerados < enemigosPorOleada
-            &&
-            tiempo - ultimoSpawn > intervaloSpawn
-        ) {
+if (
+    !esperandoOleada
+    &&
+    enemigosGenerados < enemigosPorOleada
+    &&
+    tiempo - ultimoSpawn > intervaloSpawn
+) {
 
-            crearEnemigo();
+    const cantidadRangers =
+        Math.min(
+            4,
+            Math.max(
+                0,
+                oleada - 1
+            )
+        );
 
-            enemigosGenerados++;
+    if (
+        enemigosGenerados <
+        cantidadRangers
+    ) {
 
-            ultimoSpawn = tiempo;
+        crearEnemigoRanger();
 
-        }
+    } else {
+
+        crearEnemigo();
+    }
+
+    enemigosGenerados++;
+
+    ultimoSpawn = tiempo;
+}
 
 
         moverJugador();
 
         moverProyectiles();
+
+        moverProyectilesEnemigos();
 
         moverEnemigos();
 
@@ -2506,6 +3099,8 @@ dibujarMapa();
     dibujarJugador(tiempo);
 
     dibujarProyectiles();
+
+    dibujarProyectilesEnemigos();
 
     dibujarMensajeOleada(tiempo);
 
