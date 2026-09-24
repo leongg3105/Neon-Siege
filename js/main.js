@@ -1,5 +1,5 @@
 // ============================================================
-// MAIN.JS - NEON SIEGE
+// MAIN.JS - MULTIVERSE SURVIVAL
 // Personaje jugable único: Ado
 // IDLE: assets/sprites/players/ado/ado_idle_pistol.png
 // HIT:  assets/sprites/players/ado/ado_hit_pistol.png
@@ -100,6 +100,546 @@ const API_BASE =
     window.location.port === "3000"
         ? "/api"
         : "http://localhost:3000/api";
+
+// ===========================================================
+// SISTEMA DE EFECTOS DE SONIDO
+// ===========================================================
+// Todos los archivos viven en assets/audio/sfx/.
+// Cada efecto usa varios canales para que disparos e impactos
+// rápidos puedan superponerse sin cortar el sonido anterior.
+// ===========================================================
+
+const volumenGeneralSFX = 0.55;
+const canalesPorSonido = 6;
+
+const sonidos = {
+    pistola: { ruta: "assets/audio/sfx/pistola.wav", volumen: 0.55 },
+    escopeta: { ruta: "assets/audio/sfx/escopeta.wav", volumen: 0.58 },
+    energia: { ruta: "assets/audio/sfx/energia.wav", volumen: 0.50 },
+    explosionEnergia: { ruta: "assets/audio/sfx/explosion_energia.wav", volumen: 0.68 },
+    impactoEnemigo: { ruta: "assets/audio/sfx/impacto_enemigo.wav", volumen: 0.22 },
+    enemigoMuerte: { ruta: "assets/audio/sfx/enemigo_muerte.wav", volumen: 0.32 },
+    adoHit: { ruta: "assets/audio/sfx/ado_hit.wav", volumen: 0.48 },
+    adoMuerte: { ruta: "assets/audio/sfx/ado_muerte.wav", volumen: 0.62 },
+    gameOver: { ruta: "assets/audio/sfx/game_over.wav", volumen: 0.68 },
+    subidaNivel: { ruta: "assets/audio/sfx/subida_nivel.wav", volumen: 0.55 },
+    compra: { ruta: "assets/audio/sfx/compra.wav", volumen: 0.50 },
+    error: { ruta: "assets/audio/sfx/error.wav", volumen: 0.38 },
+    rangerDisparo: { ruta: "assets/audio/sfx/ranger_disparo.wav", volumen: 0.32 }
+};
+
+Object.keys(sonidos).forEach(function (clave) {
+
+    const sonido = sonidos[clave];
+
+    sonido.canales = [];
+    sonido.indiceCanal = 0;
+
+    for (let i = 0; i < canalesPorSonido; i++) {
+
+        const audio = new Audio(sonido.ruta);
+        audio.preload = "auto";
+
+        sonido.canales.push(audio);
+    }
+
+});
+
+
+function reproducirSonido(clave) {
+
+    const sonido = sonidos[clave];
+
+    if (!sonido || sonido.canales.length === 0) {
+        return;
+    }
+
+    const canal =
+        sonido.canales[sonido.indiceCanal];
+
+    sonido.indiceCanal =
+        (sonido.indiceCanal + 1)
+        % sonido.canales.length;
+
+    canal.pause();
+    canal.currentTime = 0;
+    canal.volume =
+        Math.min(
+            1,
+            volumenGeneralSFX * sonido.volumen
+        );
+
+    const reproduccion = canal.play();
+
+    // Algunos navegadores pueden bloquear audio antes de la
+    // primera interacción del usuario. Evitamos ensuciar consola.
+    if (reproduccion !== undefined) {
+        reproduccion.catch(function () {});
+    }
+
+}
+
+// ===========================================================
+// SISTEMA DE MÚSICA
+// ===========================================================
+// Hay una pista tranquila para el menú y otra más intensa para
+// la partida. Ambas se reproducen en bucle.
+//
+// IMPORTANTE:
+// los navegadores suelen bloquear audio hasta que el usuario
+// hace su primera interacción. Por eso intentamos iniciar la
+// música del menú en el primer pointerdown de la página.
+// ===========================================================
+
+const volumenGeneralMusica = 0.18;
+
+const musicas = {
+    menu: new Audio(
+        "assets/audio/music/menu.wav"
+    ),
+    combate: new Audio(
+        "assets/audio/music/combate.wav"
+    )
+};
+
+Object.keys(musicas).forEach(function (clave) {
+
+    const musica = musicas[clave];
+
+    musica.loop = true;
+    musica.preload = "auto";
+    musica.volume = volumenGeneralMusica;
+
+});
+
+let musicaActual = null;
+
+
+function reproducirMusica(clave, reiniciar = false) {
+
+    const nuevaMusica = musicas[clave];
+
+    if (!nuevaMusica) {
+        return;
+    }
+
+    // Si ya estamos usando esa pista, solo la reanudamos.
+    if (musicaActual === nuevaMusica) {
+
+        if (reiniciar) {
+            musicaActual.currentTime = 0;
+        }
+
+        if (musicaActual.paused) {
+
+            const reproduccion =
+                musicaActual.play();
+
+            if (reproduccion !== undefined) {
+                reproduccion.catch(function () {});
+            }
+        }
+
+        return;
+    }
+
+    // Detener la pista anterior antes de cambiar.
+    if (musicaActual) {
+        musicaActual.pause();
+        musicaActual.currentTime = 0;
+    }
+
+    musicaActual = nuevaMusica;
+
+    if (reiniciar) {
+        musicaActual.currentTime = 0;
+    }
+
+    musicaActual.volume =
+        volumenGeneralMusica;
+
+    const reproduccion =
+        musicaActual.play();
+
+    if (reproduccion !== undefined) {
+        reproduccion.catch(function () {});
+    }
+
+}
+
+
+function pausarMusica() {
+
+    if (musicaActual) {
+        musicaActual.pause();
+    }
+
+}
+
+
+function reanudarMusica() {
+
+    if (!musicaActual) {
+        return;
+    }
+
+    const reproduccion =
+        musicaActual.play();
+
+    if (reproduccion !== undefined) {
+        reproduccion.catch(function () {});
+    }
+
+}
+
+
+function detenerMusica() {
+
+    if (!musicaActual) {
+        return;
+    }
+
+    musicaActual.pause();
+    musicaActual.currentTime = 0;
+    musicaActual = null;
+
+}
+
+
+// ===========================================================
+// PANTALLA DE INICIO + DESBLOQUEO DE AUDIO
+// ===========================================================
+// Los navegadores modernos bloquean el audio con sonido hasta que
+// el usuario realiza una interacción. En lugar de mostrar el menú
+// en silencio, usamos una pantalla inicial de MULTIVERSE SURVIVAL.
+//
+// Al hacer clic (o pulsar Enter/Espacio):
+// 1. se habilita el audio;
+// 2. comienza la música del menú;
+// 3. desaparece esta pantalla;
+// 4. queda visible el menú principal.
+// ===========================================================
+
+let pantallaInicioActiva = true;
+
+const pantallaInicio =
+    document.createElement("div");
+
+pantallaInicio.id =
+    "pantallaInicioMultiverse";
+
+pantallaInicio.innerHTML = `
+    <div class="inicioMultiverseContenido">
+        <div class="inicioMultiverseLinea"></div>
+
+        <h1>MULTIVERSE SURVIVAL</h1>
+
+        <p class="inicioMultiverseEstado">
+            ⬡ SISTEMA LISTO ⬡
+        </p>
+
+        <button
+            id="btnIniciarMultiverse"
+            type="button"
+        >
+            HAZ CLIC PARA INICIAR
+        </button>
+
+        <p class="inicioMultiverseAyuda">
+            También puedes presionar ENTER o ESPACIO
+        </p>
+    </div>
+`;
+
+document.body.appendChild(
+    pantallaInicio
+);
+
+
+// Estilos de esta pantalla.
+// Se crean desde JavaScript para no obligarnos a modificar styles.css.
+const estilosPantallaInicio =
+    document.createElement("style");
+
+estilosPantallaInicio.textContent = `
+    #pantallaInicioMultiverse {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        overflow: hidden;
+
+        background: #05050c;
+
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    /* MISMO FONDO DEL MENÚ PRINCIPAL */
+    #pantallaInicioMultiverse::before {
+        content: "";
+
+        position: absolute;
+
+        top: -5%;
+        left: -5%;
+
+        width: 110%;
+        height: 110%;
+
+        background-image:
+            url("assets/img/menu/FMenuApocalipsis.png");
+
+        background-size: cover;
+        background-position: center;
+
+        animation:
+            movimientoFondoInicioMultiverse
+            14s ease-in-out infinite alternate;
+
+        z-index: 0;
+    }
+
+    /* MISMA IDEA DE CAPA OSCURA DEL MENÚ */
+    #pantallaInicioMultiverse::after {
+        content: "";
+
+        position: absolute;
+        inset: 0;
+
+        background:
+            rgba(0, 0, 0, 0.48);
+
+        z-index: 1;
+    }
+
+    .inicioMultiverseContenido {
+        position: relative;
+        z-index: 3;
+
+        width: min(680px, 88vw);
+        padding: 46px 30px;
+
+        border:
+            1px solid
+            rgba(255, 160, 120, 0.28);
+
+        border-radius: 14px;
+
+        background:
+            rgba(12, 6, 12, 0.34);
+
+        backdrop-filter:
+            blur(2px);
+
+        box-shadow:
+            0 0 36px
+            rgba(120, 18, 18, 0.18);
+    }
+
+    .inicioMultiverseLinea {
+        width: 130px;
+        height: 3px;
+        margin: 0 auto 22px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #ff9c6a,
+                #ff604f
+            );
+
+        box-shadow:
+            0 0 10px
+            rgba(255, 95, 70, 0.78);
+    }
+
+    #pantallaInicioMultiverse h1 {
+        margin: 0;
+
+        font-size:
+            clamp(34px, 6vw, 66px);
+
+        letter-spacing: 0.08em;
+
+        color: #ffffff;
+
+        text-shadow:
+            0 2px 6px rgba(0, 0, 0, 0.75),
+            0 0 18px rgba(180, 35, 35, 0.35);
+    }
+
+    .inicioMultiverseEstado {
+        margin: 20px 0 32px;
+
+        color: #ffd0bd;
+
+        font-size: 14px;
+        letter-spacing: 0.19em;
+
+        text-shadow:
+            0 2px 4px
+            rgba(0, 0, 0, 0.8);
+    }
+
+    #btnIniciarMultiverse {
+        min-width: 290px;
+        padding: 16px 30px;
+
+        border:
+            1px solid
+            rgba(255, 255, 255, 0.30);
+
+        border-radius: 8px;
+
+        background:
+            rgba(10, 10, 20, 0.72);
+
+        color: white;
+
+        font-weight: bold;
+        font-size: 17px;
+        letter-spacing: 0.12em;
+
+        cursor: pointer;
+
+        transition:
+            transform 0.2s ease,
+            background 0.2s ease,
+            box-shadow 0.2s ease;
+
+        animation:
+            pulsoInicioMultiverse
+            1.45s ease-in-out infinite;
+    }
+
+    #btnIniciarMultiverse:hover {
+        transform:
+            translateY(-2px)
+            scale(1.025);
+
+        background:
+            rgba(255, 255, 255, 0.15);
+
+        box-shadow:
+            0 0 24px
+            rgba(255, 95, 65, 0.24);
+    }
+
+    .inicioMultiverseAyuda {
+        margin: 18px 0 0;
+
+        color:
+            rgba(255, 235, 225, 0.68);
+
+        font-size: 12px;
+        letter-spacing: 0.08em;
+
+        text-shadow:
+            0 2px 4px
+            rgba(0, 0, 0, 0.85);
+    }
+
+    @keyframes movimientoFondoInicioMultiverse {
+
+        0% {
+            transform:
+                scale(1.07)
+                translate(0, 0);
+        }
+
+        50% {
+            transform:
+                scale(1.12)
+                translate(-2%, -1%);
+        }
+
+        100% {
+            transform:
+                scale(1.17)
+                translate(-4%, -2%);
+        }
+
+    }
+
+    @keyframes pulsoInicioMultiverse {
+
+        0%,
+        100% {
+            box-shadow:
+                0 0 8px
+                rgba(255, 95, 65, 0.12);
+        }
+
+        50% {
+            box-shadow:
+                0 0 24px
+                rgba(255, 95, 65, 0.34);
+        }
+
+    }
+`
+
+document.head.appendChild(
+    estilosPantallaInicio
+);
+
+
+function cerrarPantallaInicio() {
+
+    if (!pantallaInicioActiva) {
+        return;
+    }
+
+    pantallaInicioActiva = false;
+
+    // Esta llamada ocurre dentro de una interacción real del usuario,
+    // así que el navegador ya permite reproducir sonido.
+    reproducirMusica(
+        "menu",
+        true
+    );
+
+    pantallaInicio.remove();
+
+}
+
+
+pantallaInicio.addEventListener(
+    "click",
+    cerrarPantallaInicio
+);
+
+
+document.addEventListener(
+    "keydown",
+    function (evento) {
+
+        if (!pantallaInicioActiva) {
+            return;
+        }
+
+        if (
+            evento.key === "Enter"
+            ||
+            evento.code === "Space"
+        ) {
+
+            evento.preventDefault();
+
+            cerrarPantallaInicio();
+
+        }
+
+    }
+);
+
 
 // ===============================
 // MAPA DEL JUEGO
@@ -606,6 +1146,8 @@ function abrirMejoraNivel() {
         "oculto"
     );
 
+    reproducirSonido("subidaNivel");
+
 }
 
 
@@ -771,6 +1313,10 @@ function actualizarSaldoTienda() {
 }
 
 function mostrarAvisoTienda(mensaje) {
+
+    if (!mensaje.startsWith("Te quedaste sin Hexa Cores")) {
+        reproducirSonido("error");
+    }
 
     avisoTienda.textContent =
         mensaje;
@@ -1117,6 +1663,8 @@ btnVolverRanking.addEventListener("click", function () {
     ranking.classList.add("oculto");
     menu.classList.remove("oculto");
 
+    reproducirMusica("menu");
+
 });
 
 btnCreditos.addEventListener("click", function () {
@@ -1134,6 +1682,8 @@ btnVolverCreditos.addEventListener("click", function () {
 
     menu.classList.remove("oculto");
 
+    reproducirMusica("menu");
+
 });
 
 
@@ -1145,6 +1695,9 @@ function iniciarJuego() {
 
     juego.classList.remove("oculto");
     gameOver.classList.add("oculto");
+
+    // Cada partida comienza con la pista de combate desde el inicio.
+    reproducirMusica("combate", true);
 
     const datos = datosAdo;
 
@@ -1332,6 +1885,13 @@ if (
 
         pausaOverlay.classList.toggle("oculto", !juegoPausado);
 
+        // La pausa manual también pausa la música.
+        if (juegoPausado) {
+            pausarMusica();
+        } else {
+            reanudarMusica();
+        }
+
     }
 
 });
@@ -1491,6 +2051,14 @@ function disparar() {
 
     ultimoDisparo =
         ahora;
+
+    if (armaActual === "pistola") {
+        reproducirSonido("pistola");
+    } else if (armaActual === "escopeta") {
+        reproducirSonido("escopeta");
+    } else if (armaActual === "energia") {
+        reproducirSonido("energia");
+    }
 
 
     // ===============================
@@ -1805,6 +2373,8 @@ function detonarUltimoProyectilEnergia() {
 
 function crearExplosionEnergia(x, y) {
 
+    reproducirSonido("explosionEnergia");
+
     const radioExplosion = 150;
     const dañoExplosion = 35;
 
@@ -1897,6 +2467,8 @@ function crearExplosionEnergia(x, y) {
                     enemigo.x,
                     enemigo.y
                 );
+
+                reproducirSonido("enemigoMuerte");
 
             }
 
@@ -2449,6 +3021,8 @@ function dispararAcidoRanger(enemigo) {
 
         tipo: "acido"
     });
+
+    reproducirSonido("rangerDisparo");
 }
 
 // ===============================
@@ -2693,6 +3267,8 @@ if (
                 proyectil.tipo
             );
 
+            reproducirSonido("impactoEnemigo");
+
 
             // ===============================
             // PROYECTIL DE ENERGÍA
@@ -2808,6 +3384,8 @@ if (
                     enemigo.y
                 );
 
+                reproducirSonido("enemigoMuerte");
+
             }
 
 
@@ -2864,6 +3442,7 @@ for (
 
         reiniciarComboPorDaño();
         crearParticulasDañoJugador();
+        reproducirSonido("adoHit");
 
 
         // Animación de daño de Ado
@@ -2966,6 +3545,7 @@ if (enemigo.tipo === "tank") {
 
                 reiniciarComboPorDaño();
                 crearParticulasDañoJugador();
+                reproducirSonido("adoHit");
 
                 // IMPORTANTE:
                 // conserva la corrección que hicimos al HIT de Ado.
@@ -4756,6 +5336,8 @@ function comprarMejoraArma(
     hexaCores -=
         precioMejora;
 
+    reproducirSonido("compra");
+
 
     if (tipoMejora === "daño") {
 
@@ -5121,6 +5703,9 @@ function iniciarMuerte() {
     jugador.deathHasta =
         jugador.deathInicio + 720;
 
+    // Sonido propio de muerte: empieza junto con el sprite de DEATH.
+    reproducirSonido("adoMuerte");
+
     teclas = {};
 }
 
@@ -5150,6 +5735,13 @@ function terminarJuego() {
     gameOver.classList.remove(
         "oculto"
     );
+
+    // El combate terminó: dejamos espacio al efecto triste de Game Over.
+    detenerMusica();
+
+    // Entra después de terminar la animación de muerte de Ado.
+    // Funciona como pequeño sting triste para la pantalla de Game Over.
+    reproducirSonido("gameOver");
 
 
     puntosFinales.textContent =
@@ -5210,12 +5802,16 @@ btnMenu.addEventListener("click", function () {
 
     menu.classList.remove("oculto");
 
+    reproducirMusica("menu", true);
+
 });
 btnContinuar.addEventListener("click", function () {
 
     juegoPausado = false;
 
     pausaOverlay.classList.add("oculto");
+
+    reanudarMusica();
 
 });
 
@@ -5241,6 +5837,8 @@ btnComprarBolillo.addEventListener("click", function () {
     }
 
     hexaCores -= precioBolillo;
+
+    reproducirSonido("compra");
 
     jugador.vida = Math.min(
         jugador.vida + curacionBolillo,
@@ -5279,6 +5877,8 @@ btnComprarBateria.addEventListener("click", function () {
     }
 
     hexaCores -= precioBateria;
+
+    reproducirSonido("compra");
 
     energiaMaxima +=
         aumentoEnergia;
@@ -5323,6 +5923,8 @@ btnComprarCatalizador.addEventListener("click", function () {
     }
 
     hexaCores -= precioCatalizador;
+
+    reproducirSonido("compra");
 
     regeneracionEnergia +=
         aumentoRegeneracion;
@@ -5403,5 +6005,7 @@ btnMenuPausa.addEventListener("click", function () {
     gameOver.classList.add("oculto");
 
     menu.classList.remove("oculto");
+
+    reproducirMusica("menu", true);
 
 });
