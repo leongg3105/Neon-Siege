@@ -1060,6 +1060,24 @@ let juegoActivo = false;
 
 let juegoPausado = false;
 
+
+// ===========================================================
+// MODO DEBUG - F2
+// ===========================================================
+// F2 activa/desactiva:
+// - panel técnico con FPS y estado del juego;
+// - círculos de colisión de Ado;
+// - círculos de colisión de enemigos;
+// - círculos de colisión de proyectiles del jugador y enemigos.
+// ===========================================================
+let debugActivo = false;
+
+let debugFPS = 0;
+let debugFrames = 0;
+let debugUltimaMedicion =
+    performance.now();
+
+
 let ultimoSpawn = 0;
 
 
@@ -1847,6 +1865,28 @@ avisoTienda.classList.add("oculto");
 document.addEventListener("keydown", function (evento) {
 
     const tecla = evento.key.toLowerCase();
+
+
+    // ===============================
+    // ACTIVAR / DESACTIVAR DEBUG
+    // ===============================
+    // Funciona incluso si el juego está pausado.
+    if (
+        evento.code === "F2"
+        &&
+        juegoActivo
+        &&
+        !evento.repeat
+    ) {
+
+        evento.preventDefault();
+
+        debugActivo =
+            !debugActivo;
+
+        return;
+    }
+
 
     teclas[tecla] = true;
 
@@ -5512,6 +5552,322 @@ function dibujarMapa() {
     );
 }
 
+// ===========================================================
+// MODO DEBUG
+// ===========================================================
+
+function actualizarDebugFPS(tiempo) {
+
+    debugFrames++;
+
+    const transcurrido =
+        tiempo - debugUltimaMedicion;
+
+    // Actualizamos la lectura varias veces por segundo para que
+    // sea estable y fácil de leer.
+    if (transcurrido >= 500) {
+
+        debugFPS =
+            Math.round(
+                debugFrames * 1000
+                /
+                transcurrido
+            );
+
+        debugFrames = 0;
+        debugUltimaMedicion = tiempo;
+    }
+
+}
+
+
+function obtenerEstadoDebug() {
+
+    if (jugador && jugador.muriendo) {
+        return "DYING";
+    }
+
+    if (nivelOverlayActivo) {
+        return "LEVEL UP";
+    }
+
+    if (tiendaActiva) {
+        return "TIENDA";
+    }
+
+    if (juegoPausado) {
+        return "PAUSA";
+    }
+
+    if (esperandoOleada) {
+        return "ENTRE OLEADAS";
+    }
+
+    return "PLAYING";
+
+}
+
+
+function dibujarCirculoDebug(
+    x,
+    y,
+    radio,
+    color
+) {
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        radio,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+
+    ctx.stroke();
+
+}
+
+
+function dibujarHitboxesDebug() {
+
+    if (!debugActivo) {
+        return;
+    }
+
+    ctx.save();
+
+
+    // ADO
+    if (jugador) {
+
+        dibujarCirculoDebug(
+            jugador.x,
+            jugador.y,
+            jugador.radio,
+            "#39d9ff"
+        );
+
+    }
+
+
+    // ENEMIGOS
+    enemigos.forEach(
+        function (enemigo) {
+
+            dibujarCirculoDebug(
+                enemigo.x,
+                enemigo.y,
+                enemigo.radio,
+                "#ff4d4d"
+            );
+
+        }
+    );
+
+
+    // PROYECTILES DE ADO
+    proyectiles.forEach(
+        function (proyectil) {
+
+            dibujarCirculoDebug(
+                proyectil.x,
+                proyectil.y,
+                proyectil.radio,
+                "#ffe66d"
+            );
+
+        }
+    );
+
+
+    // PROYECTILES ENEMIGOS
+    proyectilesEnemigos.forEach(
+        function (proyectil) {
+
+            dibujarCirculoDebug(
+                proyectil.x,
+                proyectil.y,
+                proyectil.radio,
+                "#7cff00"
+            );
+
+        }
+    );
+
+
+    ctx.restore();
+
+}
+
+
+function dibujarPanelDebug() {
+
+    if (
+        !debugActivo
+        ||
+        !jugador
+    ) {
+        return;
+    }
+
+
+    const totalEntidades =
+        1
+        + enemigos.length
+        + proyectiles.length
+        + proyectilesEnemigos.length
+        + particulas.length
+        + explosionesEnergia.length;
+
+
+    const lineas = [
+
+        "DEBUG [F2]",
+
+        "FPS: "
+        + debugFPS,
+
+        "ESTADO: "
+        + obtenerEstadoDebug(),
+
+        "OLEADA: "
+        + oleada,
+
+        "ENTIDADES: "
+        + totalEntidades,
+
+        "ENEMIGOS: "
+        + enemigos.length,
+
+        "PROYECTILES ADO: "
+        + proyectiles.length,
+
+        "PROYECTILES ENEMIGOS: "
+        + proyectilesEnemigos.length,
+
+        "PARTICULAS: "
+        + particulas.length,
+
+        "ADO X: "
+        + Math.round(jugador.x),
+
+        "ADO Y: "
+        + Math.round(jugador.y),
+
+        "VIDA: "
+        + Math.round(jugador.vida)
+        + " / "
+        + Math.round(jugador.vidaMaxima),
+
+        "ENERGIA: "
+        + Math.round(energiaActual)
+        + " / "
+        + Math.round(energiaMaxima),
+
+        "ARMA: "
+        + armaActual.toUpperCase(),
+
+        "COMBO: "
+        + comboActual
+        + "  x"
+        + multiplicadorPuntos
+
+    ];
+
+
+    const x = 14;
+    const y = 14;
+    const ancho = 270;
+
+    const altoLinea = 18;
+    const padding = 12;
+
+    const alto =
+        padding * 2
+        + lineas.length * altoLinea;
+
+
+    ctx.save();
+
+
+    // Fondo semitransparente.
+    ctx.fillStyle =
+        "rgba(0, 0, 0, 0.78)";
+
+    ctx.fillRect(
+        x,
+        y,
+        ancho,
+        alto
+    );
+
+
+    // Borde de depuración.
+    ctx.strokeStyle =
+        "rgba(57, 217, 255, 0.90)";
+
+    ctx.lineWidth = 1;
+
+    ctx.strokeRect(
+        x,
+        y,
+        ancho,
+        alto
+    );
+
+
+    ctx.font =
+        "13px monospace";
+
+    ctx.textAlign =
+        "left";
+
+    ctx.textBaseline =
+        "top";
+
+
+    lineas.forEach(
+        function (linea, indice) {
+
+            if (indice === 0) {
+
+                ctx.fillStyle =
+                    "#39d9ff";
+
+                ctx.font =
+                    "bold 14px monospace";
+
+            } else {
+
+                ctx.fillStyle =
+                    "#ffffff";
+
+                ctx.font =
+                    "13px monospace";
+
+            }
+
+            ctx.fillText(
+                linea,
+                x + padding,
+                y + padding
+                + indice * altoLinea
+            );
+
+        }
+    );
+
+
+    ctx.restore();
+
+}
+
+
 // ===============================
 // GAME LOOP
 // ===============================
@@ -5521,6 +5877,8 @@ function gameLoop(tiempo) {
     if (!juegoActivo) {
         return;
     }
+
+    actualizarDebugFPS(tiempo);
 
     ctx.clearRect(
         0,
@@ -5678,6 +6036,14 @@ if (
     dibujarMensajeOleada(tiempo);
 
     dibujarArmaActual(tiempo);
+
+
+    // DEBUG siempre se dibuja al final para quedar por encima
+    // de sprites, partículas y proyectiles.
+    dibujarHitboxesDebug();
+
+    dibujarPanelDebug();
+
 
     requestAnimationFrame(
         gameLoop
