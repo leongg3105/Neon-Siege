@@ -31,6 +31,9 @@ const tiendaOverlay = document.getElementById("tiendaOverlay");
 const tiendaOpciones = document.getElementById("tiendaOpciones");
 const btnCerrarTienda = document.getElementById("btnCerrarTienda");
 
+const btnComprarBolillo =
+    document.getElementById("btnComprarBolillo");
+
 const btnJugar = document.getElementById("btnJugar");
 const btnReiniciar = document.getElementById("btnReiniciar");
 const btnMenu = document.getElementById("btnMenu");
@@ -55,6 +58,16 @@ const puntosFinales = document.getElementById("puntosFinales");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
+// ===============================
+// MAPA DEL JUEGO
+// ===============================
+
+const mapaJuego = new Image();
+
+mapaJuego.src =
+    "assets/img/maps/mapa_zocalo.png";
+
 
 // ===============================
 // SPRITES DEL JUGADOR
@@ -2347,6 +2360,41 @@ function avanzarOleada(tiempoActual) {
 }
 
 // ===============================
+// DIBUJAR MAPA
+// ===============================
+
+function dibujarMapa() {
+
+    if (
+        !mapaJuego.complete ||
+        mapaJuego.naturalWidth === 0
+    ) {
+        ctx.fillStyle = "#16131d";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+
+    const escala = Math.max(
+        canvas.width / mapaJuego.naturalWidth,
+        canvas.height / mapaJuego.naturalHeight
+    );
+
+    const anchoDibujado = mapaJuego.naturalWidth * escala;
+    const altoDibujado = mapaJuego.naturalHeight * escala;
+
+    const x = (canvas.width - anchoDibujado) / 2;
+    const y = (canvas.height - altoDibujado) / 2;
+
+    ctx.drawImage(
+        mapaJuego,
+        x,
+        y,
+        anchoDibujado,
+        altoDibujado
+    );
+}
+
+// ===============================
 // GAME LOOP
 // ===============================
 
@@ -2362,7 +2410,7 @@ function gameLoop(tiempo) {
         canvas.width,
         canvas.height
     );
-
+dibujarMapa();
 
     // Recuperar energía poco a poco durante la partida.
     regenerarEnergia(tiempo);
@@ -2549,6 +2597,33 @@ btnContinuar.addEventListener("click", function () {
 btnCerrarTienda.addEventListener("click", function () {
 
     cerrarTienda();
+
+});
+
+btnComprarBolillo.addEventListener("click", function () {
+
+    const precioBolillo = 3;
+    const curacionBolillo = 25;
+
+    if (jugador.vida >= jugador.vidaMaxima) {
+        alert("Tu personaje ya tiene la vida completa.");
+        return;
+    }
+
+    if (hexaCores < precioBolillo) {
+        alert("No tienes suficientes Hexa Cores.");
+        return;
+    }
+
+    hexaCores -= precioBolillo;
+
+    jugador.vida = Math.min(
+        jugador.vida + curacionBolillo,
+        jugador.vidaMaxima
+    );
+
+    hudVida.textContent = jugador.vida;
+    hudHexa.textContent = hexaCores;
 
 });
 
