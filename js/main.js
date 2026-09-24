@@ -223,6 +223,26 @@ const rangerDeathRight = new Image();
 rangerDeathRight.src =
     "assets/sprites/enemies/bicho-ranger/death-left.png";
 
+    // ===============================
+// SPRITES ENEMIGO - BICHO TANK
+// ===============================
+
+const tankIdleRight = new Image();
+tankIdleRight.src =
+    "assets/sprites/enemies/bicho-tank/idle-right.png";
+
+const tankAttackRight = new Image();
+tankAttackRight.src =
+    "assets/sprites/enemies/bicho-tank/attack-right.png";
+
+const tankHitRight = new Image();
+tankHitRight.src =
+    "assets/sprites/enemies/bicho-tank/hit-right.png";
+
+const tankDeathRight = new Image();
+tankDeathRight.src =
+    "assets/sprites/enemies/bicho-tank/death-right.png";
+
 // ===============================
 // SPRITES DE ARMAS - INDICADOR
 // ===============================
@@ -2169,6 +2189,106 @@ function crearEnemigoRanger() {
 }
 
 // ===============================
+// GENERAR BICHO TANK
+// ===============================
+
+function crearEnemigoTank() {
+
+    let x;
+    let y;
+
+    const lado =
+        Math.floor(
+            Math.random() * 4
+        );
+
+    // Aparece fuera del mapa y entra caminando lentamente.
+    if (lado === 0) {
+
+        x =
+            Math.random()
+            * canvas.width;
+
+        y = -45;
+    }
+
+    if (lado === 1) {
+
+        x =
+            canvas.width + 45;
+
+        y =
+            Math.random()
+            * canvas.height;
+    }
+
+    if (lado === 2) {
+
+        x =
+            Math.random()
+            * canvas.width;
+
+        y =
+            canvas.height + 45;
+    }
+
+    if (lado === 3) {
+
+        x = -45;
+
+        y =
+            Math.random()
+            * canvas.height;
+    }
+
+
+    enemigos.push({
+
+        tipo: "tank",
+
+        x: x,
+        y: y,
+
+        // Hitbox un poco mayor que la del bicho normal.
+        radio: 28,
+
+        // Muy lento porque es el Tank.
+        velocidad: 0.65,
+
+        // Bastante más resistente.
+        vida: 120,
+        vidaMaxima: 120,
+
+        // Daño cuerpo a cuerpo.
+        daño: 12,
+
+        // Ataques más lentos pero fuertes.
+        proximoAtaque: 0,
+
+        atacandoHasta: 0,
+
+        hitInicio: 0,
+        hitHasta: 0,
+
+        muriendo: false,
+
+        muerteInicio: 0,
+        muerteHasta: 0,
+
+        direccion:
+            jugador.x > x
+                ? "right"
+                : "left",
+
+        direccionAtaque:
+            "right",
+
+        direccionMuerte:
+            "right"
+    });
+}
+
+// ===============================
 // MOVER ENEMIGOS
 // ===============================
 
@@ -2188,7 +2308,7 @@ function moverEnemigos() {
             enemigo.direccion = "left";
         }
 
-        // ===============================
+// ===============================
 // COMPORTAMIENTO DEL RANGER
 // ===============================
 
@@ -2547,6 +2667,26 @@ for (
             enemigo.vida -=
                 proyectil.daño;
 
+                // ===============================
+                // HIT DEL TANK
+                // ===============================
+
+if (
+    enemigo.tipo === "tank"
+    &&
+    enemigo.vida > 0
+) {
+
+    const ahora =
+        performance.now();
+
+    enemigo.hitInicio =
+        ahora;
+
+    enemigo.hitHasta =
+        ahora + 440;
+}
+
             crearParticulasImpacto(
                 proyectil.x,
                 proyectil.y,
@@ -2763,10 +2903,15 @@ for (
 
     enemigos.forEach(function (enemigo) {
 
-            // SOLO el bicho normal hace daño cuerpo a cuerpo
-    if (enemigo.tipo !== "normal") {
-        return;
-    }
+// Solo el bicho normal y el Tank
+// pueden hacer daño cuerpo a cuerpo.
+if (
+    enemigo.tipo !== "normal"
+    &&
+    enemigo.tipo !== "tank"
+) {
+    return;
+}
 
         // Un enemigo muerto ya no puede atacar.
         if (enemigo.muriendo) {
@@ -2794,10 +2939,23 @@ for (
                 (enemigo.proximoAtaque || 0)
             ) {
 
-                enemigo.proximoAtaque =
-                    ahora + 700;
+               // El Tank ataca más lento,
+            // pero causa mucho más daño.
+if (enemigo.tipo === "tank") {
 
-                jugador.vida -= 1;
+    enemigo.proximoAtaque =
+        ahora + 1400;
+
+    jugador.vida -=
+        enemigo.daño;
+
+} else {
+
+    enemigo.proximoAtaque =
+        ahora + 700;
+
+    jugador.vida -= 1;
+}
 
                 if (jugador.vida < 0) {
                     jugador.vida = 0;
@@ -2823,8 +2981,16 @@ for (
                 }
 
                 // Animación de ataque del bicho.
-                enemigo.atacandoHasta =
-                    ahora + 400;
+                if (enemigo.tipo === "tank") {
+
+    enemigo.atacandoHasta =
+        ahora + 600;
+
+} else {
+
+    enemigo.atacandoHasta =
+        ahora + 400;
+}
 
                 enemigo.direccionAtaque =
                     jugador.x > enemigo.x
@@ -3259,6 +3425,167 @@ function dibujarExplosionesEnergia(tiempo) {
 // ===============================
 
 // ===============================
+// DIBUJAR BICHO TANK
+// ===============================
+
+function dibujarTank(enemigo, tiempo, indice) {
+
+    let sprite = tankIdleRight;
+    let frame = 0;
+
+    const cantidadFrames = 4;
+    let tamaño = 190;
+
+
+    // ===============================
+    // MUERTE
+    // ===============================
+
+    if (enemigo.muriendo) {
+
+        sprite = tankDeathRight;
+        tamaño = 200;
+
+        const tiempoMuerte =
+            tiempo - enemigo.muerteInicio;
+
+        frame =
+            Math.floor(
+                tiempoMuerte / 175
+            );
+
+        if (frame >= cantidadFrames) {
+
+            enemigos.splice(
+                indice,
+                1
+            );
+
+            return;
+        }
+    }
+
+
+    // ===============================
+    // RECIBIR DAÑO
+    // ===============================
+
+    else if (
+        tiempo <
+        (enemigo.hitHasta || 0)
+    ) {
+
+        sprite = tankHitRight;
+
+        frame =
+            Math.floor(
+                tiempo / 110
+            )
+            %
+            cantidadFrames;
+    }
+
+
+    // ===============================
+    // ATAQUE
+    // ===============================
+
+    else if (
+        tiempo <
+        (enemigo.atacandoHasta || 0)
+    ) {
+
+        sprite = tankAttackRight;
+
+        tamaño = 195;
+
+        frame =
+            Math.floor(
+                tiempo / 120
+            )
+            %
+            cantidadFrames;
+    }
+
+
+    // ===============================
+    // CAMINAR
+    // ===============================
+
+    else {
+
+        sprite = tankIdleRight;
+
+        frame =
+            Math.floor(
+                tiempo / 180
+            )
+            %
+            cantidadFrames;
+    }
+
+
+    if (
+        !sprite.complete ||
+        sprite.width === 0
+    ) {
+        return;
+    }
+
+
+    const anchoFrame =
+        sprite.width /
+        cantidadFrames;
+
+    const altoFrame =
+        sprite.height;
+
+
+    ctx.save();
+
+    ctx.translate(
+        enemigo.x,
+        enemigo.y
+    );
+
+
+    // ===============================
+    // MIRAR HACIA LA IZQUIERDA
+    // ===============================
+
+    if (
+        enemigo.direccion === "left"
+    ) {
+
+        ctx.scale(
+            -1,
+            1
+        );
+    }
+
+
+    ctx.drawImage(
+
+        sprite,
+
+        frame * anchoFrame,
+        0,
+
+        anchoFrame,
+        altoFrame,
+
+        -tamaño / 2,
+        -tamaño / 2,
+
+        tamaño,
+        tamaño
+    );
+
+
+    ctx.restore();
+}
+
+// ===============================
 // DIBUJAR BICHO RANGER
 // ===============================
 
@@ -3464,6 +3791,17 @@ function dibujarEnemigos() {
             if (enemigo.tipo === "ranger") {
 
     dibujarRanger(
+        enemigo,
+        tiempo,
+        i
+    );
+
+    continue;
+}
+
+if (enemigo.tipo === "tank") {
+
+    dibujarTank(
         enemigo,
         tiempo,
         i
@@ -4644,17 +4982,35 @@ if (
             )
         );
 
+        const cantidadTanks =
+    Math.min(
+        4,
+        Math.max(
+            0,
+            oleada - 2
+        )
+    );
+
     if (
-        enemigosGenerados <
-        cantidadRangers
-    ) {
+    enemigosGenerados <
+    cantidadRangers
+) {
 
-        crearEnemigoRanger();
+    crearEnemigoRanger();
 
-    } else {
+} else if (
+    enemigosGenerados <
+    cantidadRangers
+    +
+    cantidadTanks
+) {
 
-        crearEnemigo();
-    }
+    crearEnemigoTank();
+
+} else {
+
+    crearEnemigo();
+}
 
     enemigosGenerados++;
 
