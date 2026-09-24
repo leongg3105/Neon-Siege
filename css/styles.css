@@ -428,6 +428,10 @@ button {
 
     box-sizing: border-box;
     flex-shrink: 0;
+
+    gap: 10px;
+    font-size: 14px;
+    white-space: nowrap;
 }
 
 canvas {
@@ -887,121 +891,133 @@ canvas {
     cursor: pointer;
 }
 
+.saldoTienda {
+    position: relative;
+    z-index: 2;
+
+    width: fit-content;
+    margin: 0 auto 16px;
+    padding: 10px 18px;
+
+    border: 1px solid rgba(89, 220, 255, 0.55);
+    border-radius: 999px;
+
+    background: rgba(11, 30, 45, 0.92);
+    color: #d9f7ff;
+
+    font-size: 17px;
+    font-weight: bold;
+}
+
+.saldoTienda strong {
+    color: #7ee9ff;
+    font-size: 20px;
+}
+
+.avisoTienda {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    width: min(620px, 95%);
+    margin: 0 auto 16px;
+    padding: 12px 18px;
+
+    border: 1px solid rgba(255, 114, 114, 0.70);
+    border-radius: 9px;
+
+    background: rgba(80, 20, 26, 0.97);
+    color: #ffd9dc;
+
+    font-weight: bold;
+    text-align: center;
+
+    box-shadow: 0 0 20px rgba(255, 70, 90, 0.18);
+}
+
+.avisoTienda.oculto {
+    display: none;
+}
+
 /* ============================= */
-/* CODEX */
+/* RANKING */
 /* ============================= */
 
-#codex {
+#ranking {
     min-height: 100vh;
 
     display: flex;
     justify-content: center;
     align-items: center;
 
-    padding: 40px 20px;
+    padding: 35px 20px;
 
-    background:
-        linear-gradient(
-            rgba(5, 5, 15, 0.92),
-            rgba(5, 5, 15, 0.96)
-        ),
-        url("../assets/img/menu/FMenu.png");
-
-    background-size: cover;
-    background-position: center;
-
+    background: rgba(5, 5, 15, 0.98);
     color: white;
 }
 
-#codex.oculto {
+#ranking.oculto {
     display: none;
 }
 
-.codexContenido {
-    width: min(1000px, 95vw);
-
+.rankingContenido {
+    width: min(980px, 95vw);
     text-align: center;
 }
 
-.codexContenido h2 {
-    margin-bottom: 10px;
-
-    font-size: 54px;
-
+.rankingContenido h2 {
+    margin: 0 0 8px;
+    font-size: 52px;
     letter-spacing: 4px;
 }
 
-.codexSubtitulo {
-    margin-bottom: 30px;
-
+.rankingSubtitulo {
     color: #c8c8d8;
-
-    font-size: 18px;
+    margin-bottom: 18px;
 }
 
-.codexCategorias {
-    display: grid;
-
-    grid-template-columns: repeat(4, 1fr);
-
-    gap: 12px;
-
-    margin-bottom: 25px;
+.rankingEstado {
+    min-height: 22px;
+    color: #8de8ff;
 }
 
-.codexCategoria {
-    padding: 16px;
+.rankingTablaContenedor {
+    overflow-x: auto;
+    margin: 18px 0 22px;
+}
 
-    border: 1px solid rgba(255, 255, 255, 0.25);
+.rankingTabla {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(10, 12, 26, 0.92);
+}
 
-    background: rgba(15, 15, 30, 0.85);
+.rankingTabla th,
+.rankingTabla td {
+    padding: 13px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
 
-    color: white;
+.rankingTabla th {
+    color: #8de8ff;
+    letter-spacing: 1px;
+}
 
-    font-size: 16px;
+.rankingTabla tbody tr:first-child td {
+    color: #ffe08a;
     font-weight: bold;
-
-    cursor: pointer;
 }
 
-.codexCategoria:hover {
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.codexPanel {
-    min-height: 330px;
-
-    padding: 30px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    border: 1px solid rgba(255, 255, 255, 0.18);
-
-    background: rgba(10, 10, 22, 0.88);
-
-    color: #b9b9c8;
-}
-
-#btnVolverCodex {
-    margin-top: 25px;
-
+#btnVolverRanking {
     padding: 14px 35px;
-
     border: 1px solid rgba(255, 255, 255, 0.30);
-
     background: rgba(10, 10, 20, 0.85);
-
     color: white;
-
     font-size: 18px;
     font-weight: bold;
-
-    cursor: pointer;
 }
 
-#btnVolverCodex:hover {
+#btnVolverRanking:hover {
     background: rgba(255, 255, 255, 0.14);
 }
 
@@ -1154,6 +1170,50 @@ canvas {
 /* Garantiza que oculto siga ganando sobre display:flex. */
 #gameOver.oculto {
     display: none;
+}
+
+.registroPuntaje {
+    flex-basis: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    margin: 8px 0 6px;
+}
+
+#nombreJugador {
+    width: min(260px, 78vw);
+    padding: 12px 14px;
+
+    border: 1px solid rgba(120, 205, 255, 0.65);
+    border-radius: 8px;
+
+    background: #101420;
+    color: white;
+
+    font-size: 16px;
+    outline: none;
+}
+
+#nombreJugador:focus {
+    border-color: #8de8ff;
+}
+
+#btnGuardarPuntaje {
+    margin: 0 !important;
+    padding: 12px 18px !important;
+}
+
+.estadoGuardarPuntaje {
+    flex-basis: 100% !important;
+    min-height: 20px;
+    margin: 2px 0 0 !important;
+
+    color: #8de8ff;
+    font-size: 14px;
 }
 
 /* ========================================================= */
@@ -1411,6 +1471,17 @@ canvas {
     letter-spacing: 3px;
 
     color: white;
+}
+
+.nivelPendientesTexto {
+    margin: 8px 0 0;
+
+    color: #ffe29a;
+    font-size: 18px;
+}
+
+.nivelPendientesTexto strong {
+    font-size: 23px;
 }
 
 .nivelSubtitulo {

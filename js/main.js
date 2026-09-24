@@ -15,12 +15,13 @@
 const menu = document.getElementById("menu");
 const juego = document.getElementById("juego");
 const gameOver = document.getElementById("gameOver");
-const codex = document.getElementById("codex");
-
-const btnCodex = document.getElementById("btnCodex");
-const btnVolverCodex = document.getElementById("btnVolverCodex");
-
+const ranking = document.getElementById("ranking");
 const creditos = document.getElementById("creditos");
+
+const btnRanking = document.getElementById("btnRanking");
+const btnVolverRanking = document.getElementById("btnVolverRanking");
+const rankingLista = document.getElementById("rankingLista");
+const rankingEstado = document.getElementById("rankingEstado");
 
 const btnCreditos = document.getElementById("btnCreditos");
 const btnVolverCreditos = document.getElementById("btnVolverCreditos");
@@ -30,6 +31,8 @@ const pausaOverlay = document.getElementById("pausaOverlay");
 const tiendaOverlay = document.getElementById("tiendaOverlay");
 const tiendaOpciones = document.getElementById("tiendaOpciones");
 const btnCerrarTienda = document.getElementById("btnCerrarTienda");
+const tiendaHexa = document.getElementById("tiendaHexa");
+const avisoTienda = document.getElementById("avisoTienda");
 
 const btnComprarBolillo =
     document.getElementById("btnComprarBolillo");
@@ -54,12 +57,15 @@ const btnMenuPausa = document.getElementById("btnMenuPausa");
 // Overlay que aparece cada vez que Ado sube de nivel por experiencia.
 const nivelOverlay = document.getElementById("nivelOverlay");
 const nivelNuevo = document.getElementById("nivelNuevo");
+const nivelPendientes = document.getElementById("nivelPendientes");
 const opcionesNivel = document.querySelectorAll(".opcionNivel");
 
 
 const hudPersonaje = document.getElementById("hudPersonaje");
 const hudVida = document.getElementById("hudVida");
 const hudPuntos = document.getElementById("hudPuntos");
+const hudCombo = document.getElementById("hudCombo");
+const hudMultiplicador = document.getElementById("hudMultiplicador");
 
 const hudHexa =
     document.getElementById("hudHexa");
@@ -77,9 +83,23 @@ const hudOleada = document.getElementById("hudOleada");
 const hudEnemigos = document.getElementById("hudEnemigos");
 
 const puntosFinales = document.getElementById("puntosFinales");
+const tiempoFinal = document.getElementById("tiempoFinal");
+const bonusTiempoFinal = document.getElementById("bonusTiempoFinal");
+const comboMaximoFinal = document.getElementById("comboMaximoFinal");
+const nombreJugador = document.getElementById("nombreJugador");
+const btnGuardarPuntaje = document.getElementById("btnGuardarPuntaje");
+const estadoGuardarPuntaje = document.getElementById("estadoGuardarPuntaje");
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
+// Cuando se usa Live Server (puerto 5500), el backend sigue corriendo
+// en el puerto 3000. Si abrimos el juego directamente desde Node,
+// utilizamos la misma dirección del navegador.
+const API_BASE =
+    window.location.port === "3000"
+        ? "/api"
+        : "http://localhost:3000/api";
 
 // ===============================
 // MAPA DEL JUEGO
@@ -402,6 +422,17 @@ let mouse = {
 let puntos = 0;
 let hexaCores = 0;
 
+// Combo de eliminaciones. Cada golpe recibido lo reinicia.
+let comboActual = 0;
+let comboMaximo = 0;
+let multiplicadorPuntos = 1;
+
+// Tiempo REAL de juego: no cuenta pausa, tienda ni selección de nivel.
+let tiempoJugadoMs = 0;
+let ultimoTiempoJuego = 0;
+let bonusTiempo = 0;
+let puntajeRegistrado = false;
+
 // ===========================================================
 // SISTEMA DE EXPERIENCIA Y NIVELES
 // ===========================================================
@@ -414,6 +445,10 @@ let nivelJugador = 1;
 let experienciaNecesaria = 50;
 let mejorasNivelPendientes = 0;
 let nivelOverlayActivo = false;
+
+// Decide qué debe pasar después de gastar todas las mejoras
+// acumuladas al terminar una oleada: abrir tienda o avanzar.
+let accionDespuesNivel = null;
 
 let ultimoDisparo = 0;
 let armaActual = "pistola";
@@ -455,6 +490,7 @@ let intervaloSpawn = 1300;
 let finMensajeOleada = 0;
 
 let tiendaActiva = false;
+let timeoutAvisoTienda = null;
 
 let mejoraTomadaEnTienda = false;
 
@@ -517,18 +553,9 @@ function agregarExperiencia(cantidad) {
 
     actualizarHUDExperiencia();
 
-
-    if (
-        mejorasNivelPendientes > 0
-        &&
-        !nivelOverlayActivo
-        &&
-        !jugador.muriendo
-    ) {
-
-        abrirMejoraNivel();
-
-    }
+    // IMPORTANTE:
+    // ya NO abrimos la selección aquí. Las mejoras se acumulan
+    // y solo se muestran cuando termina la oleada.
 
 }
 
@@ -547,15 +574,13 @@ function abrirMejoraNivel() {
     juegoPausado = true;
     teclas = {};
 
-    // Si se ganaron varios niveles de golpe, muestra primero
-    // el nivel más antiguo que todavía necesita elegir premio.
-    const nivelQueSePremia =
-        nivelJugador
-        - mejorasNivelPendientes
-        + 1;
-
+    // La pantalla aparece ENTRE OLEADAS. Si Ado subió varias veces,
+    // todas esas elecciones se resuelven aquí antes de continuar.
     nivelNuevo.textContent =
-        nivelQueSePremia;
+        nivelJugador;
+
+    nivelPendientes.textContent =
+        mejorasNivelPendientes;
 
     nivelOverlay.classList.remove(
         "oculto"
@@ -617,33 +642,270 @@ function aplicarMejoraNivel(tipoMejora) {
 
 
     mejorasNivelPendientes--;
+
+    if (mejorasNivelPendientes > 0) {
+
+        // La misma ventana permanece abierta y muestra cuántas
+        // elecciones faltan, en vez de cerrarse y abrirse otra vez.
+        nivelPendientes.textContent =
+            mejorasNivelPendientes;
+
+        return;
+
+    }
+
     nivelOverlayActivo = false;
 
     nivelOverlay.classList.add(
         "oculto"
     );
 
+    // Evita regeneraciones grandes por el tiempo pasado en el menú.
+    ultimoTiempoEnergia =
+        performance.now();
 
-    if (mejorasNivelPendientes > 0) {
+    if (accionDespuesNivel === "tienda") {
 
-        abrirMejoraNivel();
+        accionDespuesNivel = null;
+        abrirTienda();
+
+    } else if (accionDespuesNivel === "avanzar") {
+
+        accionDespuesNivel = null;
+        juegoPausado = false;
+        avanzarOleada(performance.now());
 
     } else {
 
         juegoPausado = false;
 
-        // Evita que la energía recupere de golpe el tiempo
-        // que permanecimos leyendo el menú de nivel.
-        ultimoTiempoEnergia =
-            performance.now();
+    }
 
-        // Si la subida ocurrió justo al terminar una oleada,
-        // reiniciamos la espera para que el siguiente evento no
-        // ocurra inmediatamente después de cerrar este menú.
-        if (esperandoOleada) {
-            inicioEsperaOleada =
-                performance.now();
+}
+
+
+// ===========================================================
+// COMBO Y MULTIPLICADOR DE PUNTOS
+// ===========================================================
+
+function calcularMultiplicadorCombo(combo) {
+
+    // Cada 5 eliminaciones consecutivas aumenta x0.5, con tope x3.
+    // 1-5 = x1 | 6-10 = x1.5 | 11-15 = x2 | 16-20 = x2.5 | 21+ = x3
+    return Math.min(
+        3,
+        1 + Math.floor(Math.max(0, combo - 1) / 5) * 0.5
+    );
+
+}
+
+function actualizarHUDCombo() {
+
+    hudCombo.textContent =
+        comboActual;
+
+    hudMultiplicador.textContent =
+        "x" + multiplicadorPuntos.toFixed(1).replace(".0", "");
+
+}
+
+function registrarEliminacionParaPuntos() {
+
+    comboActual++;
+    comboMaximo =
+        Math.max(comboMaximo, comboActual);
+
+    multiplicadorPuntos =
+        calcularMultiplicadorCombo(comboActual);
+
+    const puntosGanados =
+        Math.round(100 * multiplicadorPuntos);
+
+    puntos += puntosGanados;
+
+    hudPuntos.textContent =
+        puntos;
+
+    actualizarHUDCombo();
+
+}
+
+function reiniciarComboPorDaño() {
+
+    comboActual = 0;
+    multiplicadorPuntos = 1;
+    actualizarHUDCombo();
+
+}
+
+
+// ===========================================================
+// MENSAJES INTERNOS DE LA TIENDA
+// ===========================================================
+
+function actualizarSaldoTienda() {
+
+    tiendaHexa.textContent =
+        hexaCores;
+
+}
+
+function mostrarAvisoTienda(mensaje) {
+
+    avisoTienda.textContent =
+        mensaje;
+
+    avisoTienda.classList.remove(
+        "oculto"
+    );
+
+    if (timeoutAvisoTienda) {
+        clearTimeout(timeoutAvisoTienda);
+    }
+
+    timeoutAvisoTienda =
+        setTimeout(function () {
+            avisoTienda.classList.add("oculto");
+        }, 2300);
+
+}
+
+
+// ===========================================================
+// RANKING - BACKEND NODE.JS
+// ===========================================================
+
+function formatearTiempo(segundos) {
+
+    const minutos =
+        Math.floor(segundos / 60);
+
+    const resto =
+        segundos % 60;
+
+    return minutos > 0
+        ? minutos + "m " + resto + "s"
+        : resto + "s";
+
+}
+
+async function cargarRanking() {
+
+    rankingEstado.textContent =
+        "Cargando puntajes...";
+
+    rankingLista.innerHTML = "";
+
+    try {
+
+        const respuesta =
+            await fetch(API_BASE + "/scores");
+
+        if (!respuesta.ok) {
+            throw new Error("No se pudo consultar el ranking.");
         }
+
+        const puntajes =
+            await respuesta.json();
+
+        if (!Array.isArray(puntajes) || puntajes.length === 0) {
+            rankingEstado.textContent =
+                "Todavía no hay puntajes registrados.";
+            return;
+        }
+
+        rankingEstado.textContent = "";
+
+        puntajes.slice(0, 10).forEach(function (registro, indice) {
+
+            const fila =
+                document.createElement("tr");
+
+            const datos = [
+                indice + 1,
+                registro.nombre,
+                registro.puntos,
+                registro.oleada,
+                registro.nivel,
+                formatearTiempo(registro.tiempo || 0)
+            ];
+
+            datos.forEach(function (valor) {
+                const celda = document.createElement("td");
+                celda.textContent = valor;
+                fila.appendChild(celda);
+            });
+
+            rankingLista.appendChild(fila);
+
+        });
+
+    } catch (error) {
+
+        rankingEstado.textContent =
+            "No se pudo conectar con el servidor de puntajes. Ejecuta Node.js en el puerto 3000.";
+
+    }
+
+}
+
+async function guardarPuntajeServidor() {
+
+    if (puntajeRegistrado) {
+        estadoGuardarPuntaje.textContent =
+            "Este puntaje ya fue registrado.";
+        return;
+    }
+
+    const nombre =
+        nombreJugador.value.trim();
+
+    if (nombre.length === 0) {
+        estadoGuardarPuntaje.textContent =
+            "Escribe tu nombre antes de guardar.";
+        return;
+    }
+
+    estadoGuardarPuntaje.textContent =
+        "Guardando...";
+
+    try {
+
+        const respuesta =
+            await fetch(API_BASE + "/scores", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    puntos: puntos,
+                    oleada: oleada,
+                    nivel: nivelJugador,
+                    tiempo: Math.floor(tiempoJugadoMs / 1000),
+                    comboMaximo: comboMaximo
+                })
+            });
+
+        if (!respuesta.ok) {
+            throw new Error("No se pudo guardar.");
+        }
+
+        const resultado =
+            await respuesta.json();
+
+        puntajeRegistrado = true;
+        btnGuardarPuntaje.disabled = true;
+
+        estadoGuardarPuntaje.textContent =
+            resultado.guardadoEnTop10
+                ? "Puntaje guardado en el Top 10."
+                : "Puntaje enviado, pero no alcanzó el Top 10.";
+
+    } catch (error) {
+
+        estadoGuardarPuntaje.textContent =
+            "No se pudo guardar. Revisa que el servidor Node.js esté ejecutándose.";
 
     }
 
@@ -821,19 +1083,18 @@ btnJugar.addEventListener("click", function () {
 
 });
 
-btnCodex.addEventListener("click", function () {
+btnRanking.addEventListener("click", function () {
 
     menu.classList.add("oculto");
+    ranking.classList.remove("oculto");
 
-    codex.classList.remove("oculto");
+    cargarRanking();
 
 });
 
+btnVolverRanking.addEventListener("click", function () {
 
-btnVolverCodex.addEventListener("click", function () {
-
-    codex.classList.add("oculto");
-
+    ranking.classList.add("oculto");
     menu.classList.remove("oculto");
 
 });
@@ -920,6 +1181,15 @@ function iniciarJuego() {
     puntos = 0;
     hexaCores = 0;
 
+    comboActual = 0;
+    comboMaximo = 0;
+    multiplicadorPuntos = 1;
+
+    tiempoJugadoMs = 0;
+    ultimoTiempoJuego = performance.now();
+    bonusTiempo = 0;
+    puntajeRegistrado = false;
+
     nivelJugador = 1;
     experiencia = 0;
     experienciaNecesaria =
@@ -928,6 +1198,7 @@ function iniciarJuego() {
         );
     mejorasNivelPendientes = 0;
     nivelOverlayActivo = false;
+    accionDespuesNivel = null;
     nivelOverlay.classList.add("oculto");
 
     // Cada partida nueva vuelve a las estadísticas base.
@@ -968,6 +1239,8 @@ function iniciarJuego() {
     hudPuntos.textContent =
         puntos;
 
+    actualizarHUDCombo();
+
     hudHexa.textContent =
         hexaCores;
 
@@ -981,6 +1254,11 @@ mejoraTomadaEnTienda = false;
 mejorasActualesTienda = [];
 
 tiendaOverlay.classList.add("oculto");
+avisoTienda.classList.add("oculto");
+
+    nombreJugador.value = "";
+    estadoGuardarPuntaje.textContent = "";
+    btnGuardarPuntaje.disabled = false;
 
     juegoActivo = true;
 
@@ -1248,69 +1526,68 @@ function disparar() {
     // ===============================
     // PISTOLA
     // ===============================
-    // La mejora especial RÁFAGA GEMELA modifica cuántas balas
-    // salen con un solo clic. El costo y la cadencia siguen siendo
-    // los de UN disparo, aunque salgan 2 o 3 proyectiles.
+    // La mejora especial conserva TODAS las balas en la misma dirección.
+    // En lugar de abrirse como la escopeta, aparecen una detrás de otra
+    // formando una fila recta hacia el punto donde está apuntando Ado.
+    // El costo y la cadencia siguen siendo los de UN disparo.
 
     if (armaActual === "pistola") {
 
-        let dispersionesPistola = [0];
+        // Distancia inicial entre una bala y la siguiente.
+        // Si quieres juntarlas o separarlas más, cambia este valor.
+        const separacionBalasPistola = 22;
+
+        let cantidadBalasPistola = 1;
 
         if (arma.nivelEspecial === 1) {
-
-            // Nivel 1: dos balas casi paralelas.
-            dispersionesPistola = [
-                -0.035,
-                0.035
-            ];
-
+            cantidadBalasPistola = 2;
         } else if (arma.nivelEspecial >= 2) {
-
-            // Nivel 2: tres balas con una apertura pequeña.
-            dispersionesPistola = [
-                -0.07,
-                0,
-                0.07
-            ];
-
+            cantidadBalasPistola = 3;
         }
 
 
-        dispersionesPistola.forEach(
-            function (dispersion) {
+        for (let i = 0; i < cantidadBalasPistola; i++) {
 
-                const anguloBala =
-                    angulo + dispersion;
+            // Todas usan exactamente el mismo ángulo.
+            // Solo cambia su posición inicial sobre la línea de disparo.
+            const separacion =
+                i * separacionBalasPistola;
 
-                proyectiles.push({
+            proyectiles.push({
 
-                    x: jugador.x,
-                    y: jugador.y,
+                x:
+                    jugador.x
+                    + Math.cos(angulo) * separacion,
 
-                    radio: 6,
+                y:
+                    jugador.y
+                    + Math.sin(angulo) * separacion,
 
-                    velocidadX:
-                        Math.cos(anguloBala)
-                        * arma.velocidad,
+                radio: 6,
 
-                    velocidadY:
-                        Math.sin(anguloBala)
-                        * arma.velocidad,
+                velocidadX:
+                    Math.cos(angulo)
+                    * arma.velocidad,
 
-                    daño:
-                        arma.daño,
+                velocidadY:
+                    Math.sin(angulo)
+                    * arma.velocidad,
 
-                    distanciaRecorrida: 0,
+                daño:
+                    arma.daño,
 
-                    alcanceMaximo:
-                        arma.alcance,
+                // Cuenta la separación inicial para que todas mantengan
+                // el mismo alcance máximo real desde Ado.
+                distanciaRecorrida: separacion,
 
-                    tipo: "pistola"
+                alcanceMaximo:
+                    arma.alcance,
 
-                });
+                tipo: "pistola"
 
-            }
-        );
+            });
+
+        }
 
     }
 
@@ -1586,10 +1863,7 @@ function crearExplosionEnergia(x, y) {
                     enemigosEliminadosOleada;
 
 
-                puntos += 100;
-
-                hudPuntos.textContent =
-                    puntos;
+                registrarEliminacionParaPuntos();
 
 
                 hexaCores += 1;
@@ -2378,10 +2652,7 @@ for (
                     enemigosEliminadosOleada;
 
 
-                puntos += 100;
-
-                hudPuntos.textContent =
-                    puntos;
+                registrarEliminacionParaPuntos();
 
 
                 // Recompensas
@@ -2450,6 +2721,9 @@ for (
 
         hudVida.textContent =
             jugador.vida;
+
+        reiniciarComboPorDaño();
+        crearParticulasDañoJugador();
 
 
         // Animación de daño de Ado
@@ -2532,6 +2806,7 @@ for (
                 hudVida.textContent =
                     jugador.vida;
 
+                reiniciarComboPorDaño();
                 crearParticulasDañoJugador();
 
                 // IMPORTANTE:
@@ -3780,7 +4055,7 @@ function obtenerInfoMejoraEspecial(claveArma) {
         if (nivel === 0) {
             return {
                 titulo: "RÁFAGA GEMELA",
-                descripcion: "Nivel 1: cada clic dispara dos balas casi paralelas.",
+                descripcion: "Nivel 1: cada clic dispara dos balas alineadas, una detrás de la otra.",
                 actual: "1 bala",
                 siguiente: "2 balas"
             };
@@ -3789,7 +4064,7 @@ function obtenerInfoMejoraEspecial(claveArma) {
         if (nivel === 1) {
             return {
                 titulo: "RÁFAGA GEMELA",
-                descripcion: "Nivel 2: añade una tercera bala a la ráfaga.",
+                descripcion: "Nivel 2: añade una tercera bala a la misma fila de disparo.",
                 actual: "2 balas",
                 siguiente: "3 balas"
             };
@@ -3797,7 +4072,7 @@ function obtenerInfoMejoraEspecial(claveArma) {
 
         return {
             titulo: "RÁFAGA GEMELA",
-            descripcion: "La pistola dispara tres balas por cada clic.",
+            descripcion: "La pistola dispara tres balas alineadas en una sola fila por cada clic.",
             actual: "3 balas",
             siguiente: "MÁXIMO"
         };
@@ -4106,7 +4381,7 @@ function comprarMejoraArma(
     if (tipoMejora === "especial") {
 
         if (arma.nivelEspecial >= 2) {
-            alert("Esta mejora especial ya está al máximo.");
+            mostrarAvisoTienda("Esta mejora especial ya está al máximo.");
             return;
         }
 
@@ -4127,7 +4402,7 @@ function comprarMejoraArma(
             );
 
         if (nuevaCadencia === arma.cadencia) {
-            alert("Esta arma ya alcanzó el límite de cadencia.");
+            mostrarAvisoTienda("Esta arma ya alcanzó el límite de cadencia.");
             return;
         }
 
@@ -4135,7 +4410,7 @@ function comprarMejoraArma(
 
 
     if (hexaCores < precioMejora) {
-        alert("No tienes suficientes Hexa Cores.");
+        mostrarAvisoTienda("No tienes suficientes Hexa Cores.");
         return;
     }
 
@@ -4172,9 +4447,46 @@ function comprarMejoraArma(
     hudHexa.textContent =
         hexaCores;
 
+    actualizarSaldoTienda();
+
+    if (hexaCores === 0) {
+        mostrarAvisoTienda("Te quedaste sin Hexa Cores.");
+    }
+
     // Volvemos a dibujar las tarjetas para enseñar al instante
     // el valor actualizado y el siguiente nivel disponible.
     actualizarTarjetasMejorasArmas();
+
+}
+
+
+function procesarFinOleada() {
+
+    // Prioridad pedida:
+    // 1) mejoras de nivel acumuladas
+    // 2) tienda (en las oleadas donde corresponde)
+    // 3) siguiente oleada
+    if (mejorasNivelPendientes > 0) {
+
+        accionDespuesNivel =
+            oleada % 2 === 0
+                ? "tienda"
+                : "avanzar";
+
+        abrirMejoraNivel();
+        return;
+
+    }
+
+    if (oleada % 2 === 0) {
+
+        abrirTienda();
+
+    } else {
+
+        avanzarOleada(performance.now());
+
+    }
 
 }
 
@@ -4186,10 +4498,18 @@ function abrirTienda() {
 
     teclas = {};
 
-    // Mostrar las mejoras de las tres armas antes de abrir la tienda.
+    // Mostrar saldo y mejoras antes de abrir la tienda.
+    actualizarSaldoTienda();
     actualizarTarjetasMejorasArmas();
 
+    avisoTienda.classList.add("oculto");
     tiendaOverlay.classList.remove("oculto");
+
+    if (hexaCores === 0) {
+        mostrarAvisoTienda(
+            "No tienes Hexa Cores disponibles. Derrota enemigos para conseguir más."
+        );
+    }
 
 }
 
@@ -4200,6 +4520,7 @@ function cerrarTienda() {
     juegoPausado = false;
 
     tiendaOverlay.classList.add("oculto");
+    avisoTienda.classList.add("oculto");
 
     avanzarOleada(performance.now());
 
@@ -4292,6 +4613,15 @@ dibujarMapa();
     // Recuperar energía poco a poco durante la partida.
     regenerarEnergia(tiempo);
 
+    // El tiempo de puntuación solo avanza cuando realmente se está jugando.
+    if (!juegoPausado && !jugador.muriendo) {
+        tiempoJugadoMs +=
+            Math.max(0, tiempo - ultimoTiempoJuego);
+    }
+
+    // Se actualiza siempre para que pausa/tienda no generen saltos al volver.
+    ultimoTiempoJuego = tiempo;
+
 
     if (!juegoPausado && !jugador.muriendo) {
 
@@ -4365,23 +4695,18 @@ if (
         // COMENZAR SIGUIENTE OLEADA
 
         if (
-    esperandoOleada
-    &&
-    tiempo - inicioEsperaOleada >= 2000
-) {
+            esperandoOleada
+            &&
+            tiempo - inicioEsperaOleada >= 2000
+        ) {
 
-    if (oleada % 2 === 0) {
+            // Evita que este bloque se dispare varias veces mientras
+            // abrimos la selección de nivel o la tienda.
+            esperandoOleada = false;
 
-        esperandoOleada = false;
+            procesarFinOleada();
 
-        abrirTienda();
-
-    } else {
-
-        avanzarOleada(tiempo);
-
-    }
-}
+        }
 
     }
 
@@ -4451,7 +4776,16 @@ function terminarJuego() {
 
     juegoActivo = false;
     nivelOverlayActivo = false;
+    accionDespuesNivel = null;
     nivelOverlay.classList.add("oculto");
+
+    const segundosSobrevividos =
+        Math.floor(tiempoJugadoMs / 1000);
+
+    bonusTiempo =
+        segundosSobrevividos * 5;
+
+    puntos += bonusTiempo;
 
     juego.classList.add(
         "oculto"
@@ -4465,12 +4799,38 @@ function terminarJuego() {
     puntosFinales.textContent =
         puntos;
 
+    tiempoFinal.textContent =
+        formatearTiempo(segundosSobrevividos);
+
+    bonusTiempoFinal.textContent =
+        "+" + bonusTiempo;
+
+    comboMaximoFinal.textContent =
+        comboMaximo;
+
+    estadoGuardarPuntaje.textContent =
+        "Escribe tu nombre para intentar entrar al Top 10.";
+
 }
 
 
 // ===============================
 // REGRESAR AL MENÚ
 // ===============================
+
+btnGuardarPuntaje.addEventListener("click", function () {
+
+    guardarPuntajeServidor();
+
+});
+
+nombreJugador.addEventListener("keydown", function (evento) {
+
+    if (evento.key === "Enter") {
+        guardarPuntajeServidor();
+    }
+
+});
 
 btnReiniciar.addEventListener("click", function () {
 
@@ -4515,12 +4875,12 @@ btnComprarBolillo.addEventListener("click", function () {
     const curacionBolillo = 25;
 
     if (jugador.vida >= jugador.vidaMaxima) {
-        alert("Tu personaje ya tiene la vida completa.");
+        mostrarAvisoTienda("Ado ya tiene la vida completa.");
         return;
     }
 
     if (hexaCores < precioBolillo) {
-        alert("No tienes suficientes Hexa Cores.");
+        mostrarAvisoTienda("No tienes suficientes Hexa Cores.");
         return;
     }
 
@@ -4533,6 +4893,11 @@ btnComprarBolillo.addEventListener("click", function () {
 
     hudVida.textContent = jugador.vida;
     hudHexa.textContent = hexaCores;
+    actualizarSaldoTienda();
+
+    if (hexaCores === 0) {
+        mostrarAvisoTienda("Te quedaste sin Hexa Cores.");
+    }
 
 });
 
@@ -4553,7 +4918,7 @@ btnComprarBateria.addEventListener("click", function () {
     const aumentoEnergia = 20;
 
     if (hexaCores < precioBateria) {
-        alert("No tienes suficientes Hexa Cores.");
+        mostrarAvisoTienda("No tienes suficientes Hexa Cores.");
         return;
     }
 
@@ -4570,6 +4935,12 @@ btnComprarBateria.addEventListener("click", function () {
 
     hudHexa.textContent =
         hexaCores;
+
+    actualizarSaldoTienda();
+
+    if (hexaCores === 0) {
+        mostrarAvisoTienda("Te quedaste sin Hexa Cores.");
+    }
 
 });
 
@@ -4591,7 +4962,7 @@ btnComprarCatalizador.addEventListener("click", function () {
     const aumentoRegeneracion = 2;
 
     if (hexaCores < precioCatalizador) {
-        alert("No tienes suficientes Hexa Cores.");
+        mostrarAvisoTienda("No tienes suficientes Hexa Cores.");
         return;
     }
 
@@ -4602,6 +4973,12 @@ btnComprarCatalizador.addEventListener("click", function () {
 
     hudHexa.textContent =
         hexaCores;
+
+    actualizarSaldoTienda();
+
+    if (hexaCores === 0) {
+        mostrarAvisoTienda("Te quedaste sin Hexa Cores.");
+    }
 
 });
 
@@ -4665,6 +5042,7 @@ btnMenuPausa.addEventListener("click", function () {
     pausaOverlay.classList.add("oculto");
     nivelOverlay.classList.add("oculto");
     nivelOverlayActivo = false;
+    accionDespuesNivel = null;
     juego.classList.add("oculto");
     gameOver.classList.add("oculto");
 
