@@ -131,16 +131,113 @@ bichoAttackRight.src =
 
 
 // ===============================
+// SPRITES DE ARMAS - INDICADOR
+// ===============================
+
+const spritePistola = new Image();
+spritePistola.src =
+    "assets/sprites/weapons/ui/pistola.png";
+
+const spriteEscopeta = new Image();
+spriteEscopeta.src =
+    "assets/sprites/weapons/ui/escopeta.png";
+
+const spriteEnergia = new Image();
+spriteEnergia.src =
+    "assets/sprites/weapons/ui/energia.png";
+
+
+const armas = {
+
+    // ===========================================================
+    // CONFIGURACIÓN DE ARMAS
+    // ===========================================================
+    // Aquí se balancean las armas del juego.
+    //
+    // daño:
+    //   Daño que hace CADA proyectil al enemigo.
+    //   En la escopeta es el daño de cada perdigón.
+    //
+    // cadencia:
+    //   Tiempo mínimo entre disparos, en milisegundos.
+    //   Un número menor = dispara más rápido.
+    //
+    // velocidad:
+    //   Velocidad con la que avanza el proyectil.
+    //
+    // alcance:
+    //   Distancia máxima que puede recorrer el proyectil
+    //   antes de desaparecer.
+    //
+    // IMPORTANTE:
+    // La función disparar() toma estos valores directamente.
+    // Si después quieres balancear un arma, cambia los números
+    // AQUÍ y no necesitas buscar valores dentro de disparar().
+    // ===========================================================
+
+    pistola: {
+        nombre: "PISTOLA",
+        tecla: "1",
+        sprite: spritePistola,
+
+        daño: 20,
+        cadencia: 400,
+        velocidad: 8,
+        alcance: 900,
+
+        // Energía que consume cada disparo.
+        // La pistola no consume energía.
+        costoEnergia: 0
+    },
+
+    escopeta: {
+        nombre: "ESCOPETA",
+        tecla: "2",
+        sprite: spriteEscopeta,
+
+        // Este daño se aplica a CADA perdigón.
+        daño: 10,
+        cadencia: 800,
+        velocidad: 7,
+        alcance: 230,
+
+        // Consumo provisional por disparo de escopeta.
+        costoEnergia: 8
+    },
+
+    energia: {
+        nombre: "ENERGÍA",
+        tecla: "3",
+        sprite: spriteEnergia,
+
+        // Este proyectil atraviesa enemigos.
+        daño: 35,
+        cadencia: 650,
+        velocidad: 10,
+        alcance: 1000,
+
+        // El arma de energía es la que más recurso consume.
+        costoEnergia: 20
+    }
+
+};
+
+// ===============================
 // PERSONAJES
 // ===============================
 
 const datosAdo = {
 
     nombre: "Ado",
-    vida: 90,
+    vida: 100,
     velocidad: 5,
+
+    // Estos valores se conservan como datos base del personaje,
+    // pero el disparo de cada arma usa su propia configuración
+    // dentro del objeto "armas" de arriba.
     daño: 20,
     cadencia: 400,
+
     color: "#3366ff"
 
 };
@@ -167,6 +264,25 @@ let hexaCores = 0;
 let experiencia = 0;
 
 let ultimoDisparo = 0;
+let armaActual = "pistola";
+
+// ===========================================================
+// SISTEMA DE ENERGÍA DE LAS ARMAS
+// ===========================================================
+// energiaMaxima:
+//   Cantidad total que puede almacenar Ado.
+//
+// energiaActual:
+//   Recurso disponible en este momento.
+//
+// regeneracionEnergia:
+//   Cuántos puntos se recuperan por SEGUNDO.
+//   Si quieres que recargue más rápido, aumenta este número.
+// ===========================================================
+let energiaMaxima = 100;
+let energiaActual = energiaMaxima;
+let regeneracionEnergia = 8;
+let ultimoTiempoEnergia = 0;
 
 let oleada = 1;
 
@@ -302,6 +418,13 @@ function iniciarJuego() {
     hexaCores = 0;
     experiencia = 0;
 
+    // Cada partida comienza con la energía llena
+    // y con la pistola seleccionada.
+    energiaActual = energiaMaxima;
+    ultimoTiempoEnergia = performance.now();
+    armaActual = "pistola";
+    ultimoDisparo = 0;
+
     oleada = 1;
     enemigosGenerados = 0;
     enemigosPorOleada = 5;
@@ -359,6 +482,29 @@ document.addEventListener("keydown", function (evento) {
 
     teclas[tecla] = true;
 
+// ===============================
+// CAMBIAR ARMA
+// ===============================
+
+if (
+    juegoActivo &&
+    !juegoPausado &&
+    !tiendaActiva
+) {
+
+    if (tecla === "1") {
+        armaActual = "pistola";
+    }
+
+    if (tecla === "2") {
+        armaActual = "escopeta";
+    }
+
+    if (tecla === "3") {
+        armaActual = "energia";
+    }
+}
+
     if (
     (tecla === "p" || tecla === "escape")
     && juegoActivo
@@ -415,33 +561,98 @@ canvas.addEventListener("click", function () {
 
 function disparar() {
 
-if (
-    !juegoActivo ||
-    juegoPausado ||
-    jugador.muriendo
-) {
-    return;
-}
-
-    const ahora =
-        Date.now();
-
     if (
-        ahora - ultimoDisparo
-        <
-        jugador.cadencia
+        !juegoActivo ||
+        juegoPausado ||
+        jugador.muriendo
     ) {
         return;
     }
 
-ultimoDisparo = ahora;
 
-jugador.ataqueInicio =
-    performance.now();
+    // ===========================================================
+    // OBTENER LA CONFIGURACIÓN DEL ARMA SELECCIONADA
+    // ===========================================================
+    // armaActual contiene: "pistola", "escopeta" o "energia".
+    // Con esa llave obtenemos automáticamente sus estadísticas
+    // desde el objeto armas.
+    //
+    // Ejemplo:
+    // armaActual = "escopeta"
+    // arma = armas.escopeta
+    // ===========================================================
 
-jugador.ataqueHasta =
-    jugador.ataqueInicio + 560;
+    const arma =
+        armas[armaActual];
 
+
+    const ahora =
+        Date.now();
+
+
+    // ===========================================================
+    // CADENCIA
+    // ===========================================================
+    // Cada arma usa directamente su propia cadencia.
+    // Ya no necesitamos escribir 400, 800 o 650 aquí.
+    // ===========================================================
+
+    if (
+        ahora - ultimoDisparo
+        <
+        arma.cadencia
+    ) {
+        return;
+    }
+
+
+    // ===========================================================
+    // COMPROBAR Y GASTAR ENERGÍA
+    // ===========================================================
+    // Si no hay suficiente energía, el arma no dispara.
+    // La pistola tiene costoEnergia: 0, así que siempre puede
+    // disparar mientras respete su cadencia.
+    // ===========================================================
+
+    if (
+        energiaActual
+        <
+        arma.costoEnergia
+    ) {
+        return;
+    }
+
+
+    energiaActual -=
+        arma.costoEnergia;
+
+    energiaActual =
+        Math.max(
+            0,
+            energiaActual
+        );
+
+
+    ultimoDisparo =
+        ahora;
+
+
+    // ===============================
+    // ANIMACIÓN DE ATAQUE DE ADO
+    // ===============================
+    // Ado usa la misma animación de ataque
+    // sin importar el arma seleccionada.
+
+    jugador.ataqueInicio =
+        performance.now();
+
+    jugador.ataqueHasta =
+        jugador.ataqueInicio + 560;
+
+
+    // ===============================
+    // DIRECCIÓN HACIA EL MOUSE
+    // ===============================
 
     const angulo =
         Math.atan2(
@@ -449,9 +660,11 @@ jugador.ataqueHasta =
             mouse.x - jugador.x
         );
 
-    // Dirección del ataque según el mouse.
-    // Orden de filas del spritesheet:
+
+    // Dirección de la animación de Ado.
+    // Orden de las filas del spritesheet:
     // 0 ↓, 1 ↘, 2 →, 3 ↗, 4 ↑, 5 ↖, 6 ←, 7 ↙
+
     let grados =
         angulo * 180 / Math.PI;
 
@@ -459,39 +672,170 @@ jugador.ataqueHasta =
         grados += 360;
     }
 
+
     const octante =
-        Math.round(grados / 45) % 8;
+        Math.round(
+            grados / 45
+        ) % 8;
+
 
     const mapaDireccionAtaque =
         [2, 1, 0, 7, 6, 5, 4, 3];
+
 
     jugador.direccionAtaque =
         mapaDireccionAtaque[octante];
 
 
-    const velocidadBala = 8;
+    // ===============================
+    // PISTOLA
+    // ===============================
+    // Dispara una sola bala.
+    // Daño, velocidad, cadencia y alcance salen
+    // del objeto armas.pistola.
+
+    if (armaActual === "pistola") {
+
+        proyectiles.push({
+
+            x: jugador.x,
+            y: jugador.y,
+
+            radio: 6,
+
+            velocidadX:
+                Math.cos(angulo)
+                * arma.velocidad,
+
+            velocidadY:
+                Math.sin(angulo)
+                * arma.velocidad,
+
+            daño:
+                arma.daño,
+
+            distanciaRecorrida: 0,
+
+            alcanceMaximo:
+                arma.alcance,
+
+            tipo: "pistola"
+
+        });
+
+    }
 
 
-    proyectiles.push({
+    // ===============================
+    // ESCOPETA
+    // ===============================
+    // Dispara 3 perdigones en abanico.
+    // Cada perdigón usa el daño, velocidad y alcance
+    // configurados en armas.escopeta.
 
-        x: jugador.x,
+    else if (
+        armaActual === "escopeta"
+    ) {
 
-        y: jugador.y,
+        // Ángulo de cada perdigón respecto al centro.
+        // Si luego quieres más dispersión, aumenta estos valores.
+        const dispersiones = [
+            -0.12,
+            0,
+            0.12
+        ];
 
-        radio: 6,
 
-        velocidadX:
-            Math.cos(angulo)
-            * velocidadBala,
+        dispersiones.forEach(
+            function (dispersion) {
 
-        velocidadY:
-            Math.sin(angulo)
-            * velocidadBala,
+                const anguloPerdigon =
+                    angulo + dispersion;
 
-        daño:
-            jugador.daño
 
-    });
+                proyectiles.push({
+
+                    x: jugador.x,
+                    y: jugador.y,
+
+                    radio: 5,
+
+                    velocidadX:
+                        Math.cos(
+                            anguloPerdigon
+                        )
+                        * arma.velocidad,
+
+                    velocidadY:
+                        Math.sin(
+                            anguloPerdigon
+                        )
+                        * arma.velocidad,
+
+                    // El daño configurado para la escopeta
+                    // se aplica a CADA perdigón.
+                    daño:
+                        arma.daño,
+
+                    distanciaRecorrida: 0,
+
+                    alcanceMaximo:
+                        arma.alcance,
+
+                    tipo: "escopeta"
+
+                });
+
+            }
+        );
+
+    }
+
+
+    // ===============================
+    // ENERGÍA
+    // ===============================
+    // Disparo grande que atraviesa a todos los enemigos.
+    // También toma sus estadísticas directamente
+    // desde armas.energia.
+
+    else if (
+        armaActual === "energia"
+    ) {
+
+        proyectiles.push({
+
+            x: jugador.x,
+            y: jugador.y,
+
+            radio: 10,
+
+            velocidadX:
+                Math.cos(angulo)
+                * arma.velocidad,
+
+            velocidadY:
+                Math.sin(angulo)
+                * arma.velocidad,
+
+            daño:
+                arma.daño,
+
+            distanciaRecorrida: 0,
+
+            alcanceMaximo:
+                arma.alcance,
+
+            tipo: "energia",
+
+            // Guarda qué enemigos ya fueron golpeados
+            // para que el mismo proyectil no haga daño
+            // varias veces al mismo enemigo mientras lo atraviesa.
+            enemigosGolpeados: []
+
+        });
+
+    }
 
 }
 
@@ -757,7 +1101,14 @@ function moverEnemigos() {
 
 function moverProyectiles() {
 
-    proyectiles.forEach(function (proyectil) {
+    for (
+        let i = proyectiles.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const proyectil =
+            proyectiles[i];
 
         proyectil.x +=
             proyectil.velocidadX;
@@ -765,28 +1116,40 @@ function moverProyectiles() {
         proyectil.y +=
             proyectil.velocidadY;
 
-    });
+
+        // Sumar la distancia recorrida en este frame
+        const distanciaPaso =
+            Math.hypot(
+                proyectil.velocidadX,
+                proyectil.velocidadY
+            );
+
+        proyectil.distanciaRecorrida +=
+            distanciaPaso;
 
 
-    proyectiles =
-        proyectiles.filter(
-            function (proyectil) {
+        // Eliminar si sale del canvas
+        const fueraDelCanvas =
+            proyectil.x < 0 ||
+            proyectil.x > canvas.width ||
+            proyectil.y < 0 ||
+            proyectil.y > canvas.height;
 
-                return (
 
-                    proyectil.x > -20
-                    &&
-                    proyectil.x < canvas.width + 20
-                    &&
-                    proyectil.y > -20
-                    &&
-                    proyectil.y < canvas.height + 20
+        // Eliminar si ya alcanzó su alcance máximo
+        const sinAlcance =
+            proyectil.distanciaRecorrida
+            >=
+            proyectil.alcanceMaximo;
 
-                );
 
-            }
-        );
-
+        if (
+            fueraDelCanvas ||
+            sinAlcance
+        ) {
+            proyectiles.splice(i, 1);
+        }
+    }
 }
 
 
@@ -796,103 +1159,187 @@ function moverProyectiles() {
 
 function revisarColisiones() {
 
-    // ===============================
-    // PROYECTILES VS ENEMIGOS
-    // ===============================
+// ===============================
+// PROYECTILES VS ENEMIGOS
+// ===============================
+
+for (
+    let i = proyectiles.length - 1;
+    i >= 0;
+    i--
+) {
+
+    const proyectil =
+        proyectiles[i];
+
+    let proyectilEliminado =
+        false;
+
 
     for (
-        let i = proyectiles.length - 1;
-        i >= 0;
-        i--
+        let j = enemigos.length - 1;
+        j >= 0;
+        j--
     ) {
 
-        for (
-            let j = enemigos.length - 1;
-            j >= 0;
-            j--
+        const enemigo =
+            enemigos[j];
+
+
+        // Un enemigo que ya está muriendo
+        // no puede recibir más daño.
+        if (enemigo.muriendo) {
+            continue;
+        }
+
+
+        // ===============================
+        // ENERGÍA: EVITAR GOLPEAR DOS
+        // VECES AL MISMO ENEMIGO
+        // ===============================
+
+        if (
+            proyectil.tipo === "energia"
         ) {
 
-            const proyectil =
-                proyectiles[i];
-
-            const enemigo =
-                enemigos[j];
-
-            // Los enemigos que ya están muriendo
-            // no absorben más proyectiles.
-            if (enemigo.muriendo) {
+            if (
+                proyectil.enemigosGolpeados
+                    .includes(enemigo)
+            ) {
                 continue;
             }
 
-            const distancia =
-                Math.hypot(
-                    proyectil.x - enemigo.x,
-                    proyectil.y - enemigo.y
-                );
+        }
+
+
+        const distancia =
+            Math.hypot(
+                proyectil.x - enemigo.x,
+                proyectil.y - enemigo.y
+            );
+
+
+        if (
+            distancia
+            <
+            proyectil.radio
+            +
+            enemigo.radio
+        ) {
+
+            // ===============================
+            // HACER DAÑO
+            // ===============================
+
+            enemigo.vida -=
+                proyectil.daño;
+
+
+            // ===============================
+            // PROYECTIL DE ENERGÍA
+            // ===============================
 
             if (
-                distancia
-                <
-                proyectil.radio
-                +
-                enemigo.radio
+                proyectil.tipo === "energia"
             ) {
 
-                enemigo.vida -=
-                    proyectil.daño;
+                // Recordar que este enemigo
+                // ya recibió el impacto.
+                proyectil.enemigosGolpeados
+                    .push(enemigo);
+
+                // NO eliminamos el proyectil.
+                // Continúa atravesando enemigos.
+
+            }
+
+            // ===============================
+            // PISTOLA / ESCOPETA
+            // ===============================
+
+            else {
 
                 proyectiles.splice(
                     i,
                     1
                 );
 
-                if (
-                    enemigo.vida <= 0
-                    &&
-                    !enemigo.muriendo
-                ) {
+                proyectilEliminado =
+                    true;
 
-                    // No se elimina inmediatamente:
-                    // primero reproduce su animación de muerte.
-                    enemigo.muriendo = true;
+            }
 
-                    enemigo.muerteInicio =
-                        performance.now();
 
-                    enemigo.muerteHasta =
-                        enemigo.muerteInicio + 700;
+            // ===============================
+            // MUERTE DEL ENEMIGO
+            // ===============================
 
-                    enemigo.direccionMuerte =
-                        jugador.x > enemigo.x
-                            ? "right"
-                            : "left";
+            if (
+                enemigo.vida <= 0
+                &&
+                !enemigo.muriendo
+            ) {
 
-                    enemigosEliminadosOleada++;
+                enemigo.muriendo =
+                    true;
 
-                    hudEnemigos.textContent =
-                        enemigosPorOleada
-                        - enemigosEliminadosOleada;
+                enemigo.muerteInicio =
+                    performance.now();
 
-                    puntos += 100;
+                enemigo.muerteHasta =
+                    enemigo.muerteInicio + 700;
 
-                    hudPuntos.textContent =
-                        puntos;
+                enemigo.direccionMuerte =
+                    jugador.x > enemigo.x
+                        ? "right"
+                        : "left";
 
-                    // Recompensas provisionales del bicho común.
-                    hexaCores += 1;
-                    experiencia += 10;
 
-                    hudHexa.textContent =
-                        hexaCores;
+                enemigosEliminadosOleada++;
 
-                    hudXP.textContent =
-                        experiencia;
-                }
 
+                hudEnemigos.textContent =
+                    enemigosPorOleada
+                    -
+                    enemigosEliminadosOleada;
+
+
+                puntos += 100;
+
+                hudPuntos.textContent =
+                    puntos;
+
+
+                // Recompensas
+                hexaCores += 1;
+
+                experiencia += 10;
+
+
+                hudHexa.textContent =
+                    hexaCores;
+
+                hudXP.textContent =
+                    experiencia;
+
+            }
+
+
+            // Pistola y escopeta desaparecen
+            // al primer impacto.
+            if (
+                proyectilEliminado
+            ) {
                 break;
             }
+
+            // Energía NO hace break.
+            // Sigue buscando enemigos.
         }
+
     }
+
+}
 
 
     // ===============================
@@ -1254,16 +1701,38 @@ function dibujarProyectiles() {
                 Math.PI * 2
             );
 
-            ctx.fillStyle =
-                "#ffffff";
+
+            // ===============================
+            // COLOR SEGÚN EL ARMA
+            // ===============================
+
+            if (
+                proyectil.tipo === "energia"
+            ) {
+
+                ctx.fillStyle =
+                    "#39d9ff";
+
+            } else if (
+                proyectil.tipo === "escopeta"
+            ) {
+
+                ctx.fillStyle =
+                    "#ffd36a";
+
+            } else {
+
+                ctx.fillStyle =
+                    "#ffffff";
+
+            }
+
 
             ctx.fill();
 
         }
     );
-
 }
-
 
 // ===============================
 // DIBUJAR ENEMIGOS
@@ -1507,6 +1976,277 @@ function dibujarEnemigos() {
 
 }
 
+// ===========================================================
+// REGENERAR ENERGÍA
+// ===========================================================
+// Esta función usa el tiempo real entre frames para recuperar
+// energía de forma suave, sin depender de los FPS del juego.
+//
+// Mientras el juego está pausado o Ado está muriendo, no se
+// regenera energía. El reloj sí se actualiza para evitar que
+// al volver de una pausa se recupere toda de golpe.
+// ===========================================================
+
+function regenerarEnergia(tiempo) {
+
+    if (ultimoTiempoEnergia === 0) {
+        ultimoTiempoEnergia = tiempo;
+        return;
+    }
+
+
+    const deltaSegundos =
+        (tiempo - ultimoTiempoEnergia) / 1000;
+
+    ultimoTiempoEnergia =
+        tiempo;
+
+
+    if (
+        juegoPausado ||
+        jugador.muriendo
+    ) {
+        return;
+    }
+
+
+    energiaActual +=
+        regeneracionEnergia
+        * deltaSegundos;
+
+
+    energiaActual =
+        Math.min(
+            energiaMaxima,
+            energiaActual
+        );
+}
+
+
+function dibujarArmaActual(tiempo) {
+
+    const arma =
+        armas[armaActual];
+
+    const sprite =
+        arma.sprite;
+
+
+    // ===============================
+    // POSICIÓN DEL PANEL
+    // ===============================
+
+    const x = 20;
+
+    const y =
+        canvas.height - 145;
+
+    const anchoPanel = 180;
+
+    // Un poco más alto para incluir la barra de energía.
+    const altoPanel = 125;
+
+
+    // ===============================
+    // FONDO DEL PANEL
+    // ===============================
+
+    ctx.fillStyle =
+        "rgba(5, 5, 20, 0.80)";
+
+    ctx.fillRect(
+        x,
+        y,
+        anchoPanel,
+        altoPanel
+    );
+
+
+    // ===============================
+    // BORDE DEL PANEL
+    // ===============================
+
+    ctx.strokeStyle =
+        "rgba(80, 120, 255, 0.9)";
+
+    ctx.lineWidth = 2;
+
+    ctx.strokeRect(
+        x,
+        y,
+        anchoPanel,
+        altoPanel
+    );
+
+
+    // ===============================
+    // SPRITE ANIMADO DEL ARMA
+    // ===============================
+
+    if (
+        sprite.complete &&
+        sprite.naturalWidth > 0
+    ) {
+
+        const cantidadFrames = 4;
+
+        const anchoFrame =
+            sprite.naturalWidth /
+            cantidadFrames;
+
+        const altoFrame =
+            sprite.naturalHeight;
+
+        const frameActual =
+            Math.floor(
+                tiempo / 150
+            ) % cantidadFrames;
+
+
+        const anchoSprite = 80;
+
+        const altoSprite = 50;
+
+
+        // Centrar el sprite horizontalmente
+        const spriteX =
+            x
+            +
+            (
+                anchoPanel -
+                anchoSprite
+            ) / 2;
+
+        const spriteY =
+            y + 6;
+
+
+        ctx.drawImage(
+            sprite,
+
+            frameActual * anchoFrame,
+            0,
+
+            anchoFrame,
+            altoFrame,
+
+            spriteX,
+            spriteY,
+
+            anchoSprite,
+            altoSprite
+        );
+    }
+
+
+    // ===============================
+    // NOMBRE DEL ARMA
+    // ===============================
+
+    ctx.fillStyle =
+        "white";
+
+    ctx.font =
+        "bold 16px Arial";
+
+    ctx.textAlign =
+        "center";
+
+    ctx.textBaseline =
+        "middle";
+
+
+    ctx.fillText(
+        arma.nombre,
+
+        x + anchoPanel / 2,
+
+        y + 72
+    );
+
+
+    // ===============================
+    // TEXTO DE ENERGÍA
+    // ===============================
+
+    ctx.fillStyle =
+        "#9eeaff";
+
+    ctx.font =
+        "bold 11px Arial";
+
+    ctx.fillText(
+        "ENERGÍA "
+        + Math.floor(energiaActual)
+        + " / "
+        + energiaMaxima,
+
+        x + anchoPanel / 2,
+        y + 92
+    );
+
+
+    // ===============================
+    // BARRA DE ENERGÍA
+    // ===============================
+
+    const barraX =
+        x + 15;
+
+    const barraY =
+        y + 103;
+
+    const anchoBarra =
+        anchoPanel - 30;
+
+    const altoBarra = 10;
+
+
+    // Fondo de la barra.
+    ctx.fillStyle =
+        "rgba(255, 255, 255, 0.15)";
+
+    ctx.fillRect(
+        barraX,
+        barraY,
+        anchoBarra,
+        altoBarra
+    );
+
+
+    // Porcentaje entre 0 y 1.
+    const porcentajeEnergia =
+        energiaActual
+        /
+        energiaMaxima;
+
+
+    // Parte llena de la barra.
+    ctx.fillStyle =
+        "#39d9ff";
+
+    ctx.fillRect(
+        barraX,
+        barraY,
+        anchoBarra * porcentajeEnergia,
+        altoBarra
+    );
+
+
+    // Borde de la barra.
+    ctx.strokeStyle =
+        "rgba(120, 220, 255, 0.9)";
+
+    ctx.lineWidth = 1;
+
+    ctx.strokeRect(
+        barraX,
+        barraY,
+        anchoBarra,
+        altoBarra
+    );
+}
+
 // ===============================
 // MENSAJE DE OLEADA
 // ===============================
@@ -1623,6 +2363,11 @@ function gameLoop(tiempo) {
         canvas.height
     );
 
+
+    // Recuperar energía poco a poco durante la partida.
+    regenerarEnergia(tiempo);
+
+
     if (!juegoPausado && !jugador.muriendo) {
 
         // GENERAR ENEMIGOS
@@ -1716,6 +2461,7 @@ function gameLoop(tiempo) {
 
     dibujarMensajeOleada(tiempo);
 
+    dibujarArmaActual(tiempo);
 
     requestAnimationFrame(
         gameLoop
