@@ -641,6 +641,601 @@ document.addEventListener(
 );
 
 
+// ===========================================================
+// PANTALLA DE INSTRUCCIONES
+// ===========================================================
+// Se crea desde JavaScript para no modificar index.html ni styles.css.
+// El botón se inserta en el menú principal, entre JUGAR y RANKING.
+// ===========================================================
+
+const btnInstrucciones =
+    document.createElement("button");
+
+btnInstrucciones.id =
+    "btnInstrucciones";
+
+btnInstrucciones.textContent =
+    "INSTRUCCIONES";
+
+
+// La clase .menuBotones ya da el mismo estilo que los demás botones.
+const menuBotones =
+    menu.querySelector(".menuBotones");
+
+if (menuBotones) {
+
+    if (btnRanking) {
+
+        menuBotones.insertBefore(
+            btnInstrucciones,
+            btnRanking
+        );
+
+    } else {
+
+        menuBotones.appendChild(
+            btnInstrucciones
+        );
+
+    }
+
+}
+
+
+// Creamos la pantalla completa de instrucciones.
+const instrucciones =
+    document.createElement("section");
+
+instrucciones.id =
+    "instrucciones";
+
+instrucciones.classList.add(
+    "oculto"
+);
+
+instrucciones.innerHTML = `
+    <div class="instruccionesContenido">
+
+        <div class="instruccionesEncabezado">
+            <p class="instruccionesEtiqueta">
+                MULTIVERSE SURVIVAL
+            </p>
+
+            <h2>INSTRUCCIONES</h2>
+
+            <p class="instruccionesSubtitulo">
+                Sobrevive a las oleadas, mejora a Ado
+                y consigue la mayor puntuación posible.
+            </p>
+        </div>
+
+
+        <div class="instruccionesGrid">
+
+            <article class="instruccionesTarjeta">
+                <h3>🎮 CONTROLES</h3>
+
+                <div class="instruccionFila">
+                    <span class="teclaInstruccion">W A S D</span>
+                    <span>Movimiento</span>
+                </div>
+
+                <div class="instruccionFila">
+                    <span class="teclaInstruccion">MOUSE</span>
+                    <span>Apuntar</span>
+                </div>
+
+                <div class="instruccionFila">
+                    <span class="teclaInstruccion">CLIC IZQ.</span>
+                    <span>Disparar</span>
+                </div>
+
+                <div class="instruccionFila">
+                    <span class="teclaInstruccion">CLIC DER.</span>
+                    <span>Detonar energía especial Nv. 2</span>
+                </div>
+
+                <div class="instruccionFila">
+                    <span class="teclaInstruccion">1 / 2 / 3</span>
+                    <span>Cambiar de arma</span>
+                </div>
+
+                <div class="instruccionFila">
+                    <span class="teclaInstruccion">P / ESC</span>
+                    <span>Pausar / continuar</span>
+                </div>
+
+                <div class="instruccionFila">
+                    <span class="teclaInstruccion">F2</span>
+                    <span>Activar modo Debug</span>
+                </div>
+            </article>
+
+
+            <article class="instruccionesTarjeta">
+                <h3>🔫 ARMAS</h3>
+
+                <div class="armaInstruccion">
+                    <strong>1 · PISTOLA</strong>
+                    <p>
+                        Arma equilibrada y precisa.
+                        Su especial añade proyectiles alineados.
+                    </p>
+                </div>
+
+                <div class="armaInstruccion">
+                    <strong>2 · ESCOPETA</strong>
+                    <p>
+                        Dispara varios perdigones con dispersión
+                        y funciona mejor a corta distancia.
+                    </p>
+                </div>
+
+                <div class="armaInstruccion">
+                    <strong>3 · ENERGÍA</strong>
+                    <p>
+                        Consume energía y atraviesa enemigos.
+                        Su mejora máxima permite detonación manual.
+                    </p>
+                </div>
+            </article>
+
+
+            <article class="instruccionesTarjeta">
+                <h3>⬡ RECURSOS</h3>
+
+                <div class="recursoInstruccion">
+                    <strong>❤️ VIDA</strong>
+                    <span>
+                        Si llega a 0, termina la partida.
+                    </span>
+                </div>
+
+                <div class="recursoInstruccion">
+                    <strong>⚡ ENERGÍA</strong>
+                    <span>
+                        Se regenera y se utiliza con armas especiales.
+                    </span>
+                </div>
+
+                <div class="recursoInstruccion">
+                    <strong>XP</strong>
+                    <span>
+                        Derrota enemigos para subir de nivel.
+                    </span>
+                </div>
+
+                <div class="recursoInstruccion">
+                    <strong>⬡ HEXA CORES</strong>
+                    <span>
+                        Se utilizan para comprar mejoras en la tienda.
+                    </span>
+                </div>
+            </article>
+
+
+            <article class="instruccionesTarjeta">
+                <h3>🔥 PUNTUACIÓN Y PROGRESIÓN</h3>
+
+                <p>
+                    Elimina enemigos consecutivamente sin recibir daño
+                    para aumentar el combo y el multiplicador.
+                </p>
+
+                <p>
+                    Al subir de nivel podrás elegir mejoras para Ado.
+                    Entre oleadas también aparecerá la tienda cuando corresponda.
+                </p>
+
+                <p>
+                    Tu puntuación final también recibe un bonus
+                    por el tiempo que logres sobrevivir.
+                </p>
+            </article>
+
+        </div>
+
+
+        <button
+            id="btnVolverInstrucciones"
+            type="button"
+        >
+            VOLVER AL MENÚ
+        </button>
+
+    </div>
+`;
+
+const mainElemento =
+    document.querySelector("main");
+
+if (mainElemento) {
+
+    mainElemento.appendChild(
+        instrucciones
+    );
+
+} else {
+
+    document.body.appendChild(
+        instrucciones
+    );
+
+}
+
+
+const estilosInstrucciones =
+    document.createElement("style");
+
+estilosInstrucciones.textContent = `
+
+    /* ===================================================== */
+    /* PANTALLA DE INSTRUCCIONES */
+    /* ===================================================== */
+
+    #instrucciones {
+        position: fixed;
+        inset: 0;
+        z-index: 9000;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        padding: 34px 20px;
+
+        overflow-y: auto;
+
+        color: white;
+
+        background:
+            linear-gradient(
+                rgba(15, 3, 8, 0.73),
+                rgba(5, 2, 8, 0.94)
+            ),
+            url("assets/img/menu/FMenuApocalipsis.png");
+
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+
+
+    #instrucciones.oculto {
+        display: none;
+    }
+
+
+    .instruccionesContenido {
+        width: min(1050px, 96vw);
+
+        padding: 30px;
+
+        border:
+            1px solid
+            rgba(255, 255, 255, 0.18);
+
+        border-radius: 16px;
+
+        background:
+            rgba(10, 7, 13, 0.78);
+
+        box-shadow:
+            0 0 45px
+            rgba(110, 10, 20, 0.24);
+
+        backdrop-filter:
+            blur(4px);
+    }
+
+
+    .instruccionesEncabezado {
+        margin-bottom: 25px;
+
+        text-align: center;
+    }
+
+
+    .instruccionesEtiqueta {
+        margin: 0 0 5px;
+
+        color: #ff9b7a;
+
+        font-size: 12px;
+        font-weight: bold;
+
+        letter-spacing: 0.28em;
+    }
+
+
+    .instruccionesEncabezado h2 {
+        margin: 0;
+
+        font-size:
+            clamp(34px, 5vw, 58px);
+
+        letter-spacing: 0.10em;
+
+        text-shadow:
+            0 3px 10px
+            rgba(0, 0, 0, 0.75);
+    }
+
+
+    .instruccionesSubtitulo {
+        margin:
+            12px auto 0;
+
+        max-width: 650px;
+
+        color:
+            rgba(255, 235, 225, 0.78);
+
+        line-height: 1.5;
+    }
+
+
+    .instruccionesGrid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 16px;
+
+        text-align: left;
+    }
+
+
+    .instruccionesTarjeta {
+        padding: 20px;
+
+        border:
+            1px solid
+            rgba(255, 122, 88, 0.20);
+
+        border-radius: 12px;
+
+        background:
+            rgba(8, 8, 16, 0.72);
+
+        box-shadow:
+            inset 0 0 24px
+            rgba(255, 80, 50, 0.035);
+    }
+
+
+    .instruccionesTarjeta h3 {
+        margin: 0 0 17px;
+
+        color: #ffd4c3;
+
+        font-size: 16px;
+
+        letter-spacing: 0.12em;
+    }
+
+
+    .instruccionesTarjeta p {
+        margin: 10px 0;
+
+        color:
+            rgba(255, 255, 255, 0.82);
+
+        font-size: 14px;
+        line-height: 1.55;
+    }
+
+
+    .instruccionFila {
+        display: grid;
+
+        grid-template-columns:
+            120px 1fr;
+
+        align-items: center;
+
+        gap: 12px;
+
+        margin: 9px 0;
+    }
+
+
+    .teclaInstruccion {
+        padding: 6px 8px;
+
+        border:
+            1px solid
+            rgba(255, 255, 255, 0.24);
+
+        border-radius: 6px;
+
+        background:
+            rgba(255, 255, 255, 0.07);
+
+        color: #ffffff;
+
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: bold;
+
+        text-align: center;
+    }
+
+
+    .armaInstruccion {
+        margin-bottom: 13px;
+
+        padding-bottom: 12px;
+
+        border-bottom:
+            1px solid
+            rgba(255, 255, 255, 0.08);
+    }
+
+
+    .armaInstruccion:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+
+        border-bottom: none;
+    }
+
+
+    .armaInstruccion strong {
+        color: #ffb798;
+
+        letter-spacing: 0.08em;
+    }
+
+
+    .recursoInstruccion {
+        display: flex;
+        flex-direction: column;
+
+        gap: 4px;
+
+        margin: 13px 0;
+    }
+
+
+    .recursoInstruccion strong {
+        color: #ffb798;
+    }
+
+
+    .recursoInstruccion span {
+        color:
+            rgba(255, 255, 255, 0.78);
+
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+
+    #btnVolverInstrucciones {
+        margin-top: 25px;
+
+        min-width: 280px;
+
+        padding: 15px 28px;
+
+        border:
+            1px solid
+            rgba(255, 255, 255, 0.30);
+
+        border-radius: 8px;
+
+        background:
+            rgba(10, 10, 20, 0.78);
+
+        color: white;
+
+        font-size: 16px;
+        font-weight: bold;
+
+        letter-spacing: 0.12em;
+
+        cursor: pointer;
+
+        transition:
+            transform 0.2s ease,
+            background 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+
+    #btnVolverInstrucciones:hover {
+        transform:
+            translateY(-2px);
+
+        background:
+            rgba(255, 255, 255, 0.15);
+
+        box-shadow:
+            0 0 22px
+            rgba(255, 95, 65, 0.20);
+    }
+
+
+    @media (max-width: 760px) {
+
+        #instrucciones {
+            align-items: flex-start;
+        }
+
+
+        .instruccionesContenido {
+            padding: 22px 16px;
+        }
+
+
+        .instruccionesGrid {
+            grid-template-columns: 1fr;
+        }
+
+
+        .instruccionFila {
+            grid-template-columns:
+                105px 1fr;
+        }
+
+    }
+
+`;
+
+document.head.appendChild(
+    estilosInstrucciones
+);
+
+
+const btnVolverInstrucciones =
+    document.getElementById(
+        "btnVolverInstrucciones"
+    );
+
+
+btnInstrucciones.addEventListener(
+    "click",
+    function () {
+
+        menu.classList.add(
+            "oculto"
+        );
+
+        instrucciones.classList.remove(
+            "oculto"
+        );
+
+        // La música del menú continúa sonando.
+        reproducirMusica(
+            "menu"
+        );
+
+    }
+);
+
+
+btnVolverInstrucciones.addEventListener(
+    "click",
+    function () {
+
+        instrucciones.classList.add(
+            "oculto"
+        );
+
+        menu.classList.remove(
+            "oculto"
+        );
+
+        reproducirMusica(
+            "menu"
+        );
+
+    }
+);
+
+
 // ===============================
 // MAPA DEL JUEGO
 // ===============================
