@@ -194,11 +194,17 @@ function reproducirSonido(clave) {
 const volumenGeneralMusica = 0.18;
 
 const musicas = {
+
     menu: new Audio(
         "assets/audio/music/menu.wav"
     ),
+
     combate: new Audio(
         "assets/audio/music/combate.wav"
+    ),
+
+    hivelord: new Audio(
+        "assets/audio/music/hivelord.mp3"
     )
 };
 
@@ -213,6 +219,8 @@ Object.keys(musicas).forEach(function (clave) {
 });
 
 let musicaActual = null;
+
+let tiempoMusicaCombateAntesJefe = 0;
 
 
 function reproducirMusica(clave, reiniciar = false) {
@@ -322,9 +330,16 @@ function detenerMusica() {
 
 let pantallaInicioActiva = true;
 
+
+// ===============================
+// PANTALLA INICIAL EN SILENCIO
+// ===============================
+
+detenerMusica();
+
+
 const pantallaInicio =
     document.createElement("div");
-
 pantallaInicio.id =
     "pantallaInicioMultiverse";
 
@@ -1378,6 +1393,82 @@ const tankDeathRight = new Image();
 tankDeathRight.src =
     "assets/sprites/enemies/bicho-tank/death-right.png";
 
+    // ===============================
+// SPRITES JEFE - HIVELORD
+// ===============================
+
+// IDLE
+
+const hiveLordIdleLeft = new Image();
+hiveLordIdleLeft.src =
+    "assets/sprites/enemies/hivelord-boss/idle-left.png";
+
+const hiveLordIdleRight = new Image();
+hiveLordIdleRight.src =
+    "assets/sprites/enemies/hivelord-boss/idle-right.png";
+
+
+// ENTERRARSE
+
+const hiveLordBurrowLeft = new Image();
+hiveLordBurrowLeft.src =
+    "assets/sprites/enemies/hivelord-boss/burrow-left.png";
+
+const hiveLordBurrowRight = new Image();
+hiveLordBurrowRight.src =
+    "assets/sprites/enemies/hivelord-boss/burrow-right.png";
+
+
+// SALIR DE LA TIERRA
+
+const hiveLordEmergeLeft = new Image();
+hiveLordEmergeLeft.src =
+    "assets/sprites/enemies/hivelord-boss/emerge-left.png";
+
+const hiveLordEmergeRight = new Image();
+hiveLordEmergeRight.src =
+    "assets/sprites/enemies/hivelord-boss/emerge-right.png";
+
+
+// ESCUPIR PROYECTIL
+
+const hiveLordSpitLeft = new Image();
+hiveLordSpitLeft.src =
+    "assets/sprites/enemies/hivelord-boss/spit-left.png";
+
+const hiveLordSpitRight = new Image();
+hiveLordSpitRight.src =
+    "assets/sprites/enemies/hivelord-boss/spit-right.png";
+
+
+// GOLPE DE ÁREA
+
+const hiveLordSlamLeft = new Image();
+hiveLordSlamLeft.src =
+    "assets/sprites/enemies/hivelord-boss/slam-left.png";
+
+const hiveLordSlamRight = new Image();
+hiveLordSlamRight.src =
+    "assets/sprites/enemies/hivelord-boss/slam-right.png";
+
+
+// RECIBIR DAÑO
+
+const hiveLordHitLeft = new Image();
+hiveLordHitLeft.src =
+    "assets/sprites/enemies/hivelord-boss/hit-left.png";
+
+const hiveLordHitRight = new Image();
+hiveLordHitRight.src =
+    "assets/sprites/enemies/hivelord-boss/hit-right.png";
+
+
+// MUERTE
+
+const hiveLordDeathLeft = new Image();
+hiveLordDeathLeft.src =
+    "assets/sprites/enemies/hivelord-boss/death-left.png";
+
 // ===============================
 // SPRITES DE ARMAS - INDICADOR
 // ===============================
@@ -1637,6 +1728,8 @@ let oleada = 1;
 let enemigosGenerados = 0;
 let enemigosPorOleada = 5;
 let enemigosEliminadosOleada = 0;
+
+let hiveLordOleada5Generado = false;
 
 let esperandoOleada = false;
 let inicioEsperaOleada = 0;
@@ -2405,6 +2498,8 @@ function iniciarJuego() {
     enemigosPorOleada = 5;
     enemigosEliminadosOleada = 0;
 
+    hiveLordOleada5Generado = false;
+
     esperandoOleada = false;
     intervaloSpawn = 1300;
 
@@ -2447,11 +2542,8 @@ avisoTienda.classList.add("oculto");
     btnGuardarPuntaje.disabled = false;
 
     juegoActivo = true;
-
-    requestAnimationFrame(gameLoop);
-
-}
-
+requestAnimationFrame(gameLoop);
+    }
 
 // ===============================
 // CONTROLES DEL TECLADO
@@ -3037,12 +3129,16 @@ function crearExplosionEnergia(x, y) {
 
     enemigos.forEach(function (enemigo) {
 
-        if (enemigo.muriendo) {
-            return;
-        }
+    if (
+        enemigo.muriendo
+        ||
+        enemigo.invulnerable
+    ) {
+        return;
+    }
 
-        const distancia =
-            Math.hypot(
+    const distancia =
+        Math.hypot(
                 x - enemigo.x,
                 y - enemigo.y
             );
@@ -3496,8 +3592,87 @@ function crearEnemigoTank() {
 }
 
 // ===============================
-// MOVER ENEMIGOS
+// GENERAR JEFE - HIVELORD
 // ===============================
+
+function crearHiveLord() {
+
+    // ===============================
+    // MÚSICA DEL HIVELORD
+    // ===============================
+
+    if (
+        musicaActual === musicas.combate
+    ) {
+
+        tiempoMusicaCombateAntesJefe =
+            musicas.combate.currentTime;
+    }
+
+    reproducirMusica(
+        "hivelord",
+        true
+    );
+
+
+    const x =
+        canvas.width * 0.72;
+
+    const y =
+        canvas.height * 0.55;
+
+    const ahora =
+        performance.now();
+
+    enemigos.push({
+
+        tipo: "hivelord",
+        esJefe: true,
+
+        x: x,
+        y: y,
+
+        radio: 55,
+
+        velocidad: 0,
+
+        vida: 7000,
+        vidaMaxima: 7000,
+
+        fase: 1,
+
+        estado: "emerge",
+        estadoInicio: ahora,
+
+        invulnerable: true,
+
+        direccion:
+            jugador.x >= x
+                ? "right"
+                : "left",
+
+        proximoAtaque:
+            ahora + 1800,
+
+        disparoRealizado: false,
+
+        proximoSlam:
+            ahora + 5000,
+
+        proximaInvocacion:
+            ahora + 7000,
+
+        proximoBurrow:
+            ahora + 6000,
+
+        hitInicio: 0,
+        hitHasta: 0,
+
+        muriendo: false,
+        muerteInicio: 0,
+        muerteHasta: 0
+    });
+}
 
 function moverEnemigos() {
 
@@ -3508,62 +3683,429 @@ function moverEnemigos() {
             return;
         }
 
-        // Actualizar hacia qué lado mira.
+
+        // ===============================
+        // ACTUALIZAR DIRECCIÓN
+        // ===============================
+
         if (jugador.x >= enemigo.x) {
-            enemigo.direccion = "right";
+
+            enemigo.direccion =
+                "right";
+
         } else {
-            enemigo.direccion = "left";
+
+            enemigo.direccion =
+                "left";
         }
 
+
+        // ===============================
+        // COMPORTAMIENTO DEL RANGER
+        // ===============================
+
+        if (enemigo.tipo === "ranger") {
+
+            const ahora =
+                performance.now();
+
+
+            // Esperar antes del primer ataque.
+            if (
+                enemigo.proximoDisparo === 0
+            ) {
+
+                enemigo.proximoDisparo =
+                    ahora + 1200;
+
+                return;
+            }
+
+
+            // Iniciar ataque.
+            if (
+                ahora >= enemigo.proximoDisparo
+                &&
+                ahora >=
+                    (enemigo.atacandoHasta || 0)
+            ) {
+
+                enemigo.direccionAtaque =
+                    enemigo.direccion;
+
+                enemigo.atacandoHasta =
+                    ahora + 500;
+
+                dispararAcidoRanger(
+                    enemigo
+                );
+
+                enemigo.proximoDisparo =
+                    ahora + 1800;
+            }
+
+            return;
+        }
+
+
 // ===============================
-// COMPORTAMIENTO DEL RANGER
+// COMPORTAMIENTO DEL HIVELORD
 // ===============================
 
-if (enemigo.tipo === "ranger") {
+if (enemigo.tipo === "hivelord") {
 
     const ahora =
         performance.now();
 
-    // Esperar un poco antes del primer ataque
-    if (enemigo.proximoDisparo === 0) {
+        // ===============================
+// FASES DEL HIVELORD
+// ===============================
 
-        enemigo.proximoDisparo =
-            ahora + 1200;
+const porcentajeVida =
+    enemigo.vida / enemigo.vidaMaxima;
+
+
+// FASE 3
+// 30% de vida o menos
+if (porcentajeVida <= 0.30) {
+
+    enemigo.fase = 3;
+}
+
+
+// FASE 2
+// 60% de vida o menos
+else if (porcentajeVida <= 0.60) {
+
+    enemigo.fase = 2;
+}
+
+
+// FASE 1
+// Más del 60% de vida
+else {
+
+    enemigo.fase = 1;
+}
+
+
+    // ===============================
+    // EMERGE
+    // ===============================
+
+    // Mientras sale de la tierra
+    // todavía no puede atacar.
+    if (
+        enemigo.estado === "emerge"
+    ) {
+        return;
+    }
+
+
+    // ===============================
+    // INICIAR ENTERRAMIENTO
+    // ===============================
+
+    if (
+        enemigo.estado === "idle"
+        &&
+        ahora >= enemigo.proximoBurrow
+    ) {
+
+        enemigo.estado =
+            "burrow";
+
+        enemigo.estadoInicio =
+            ahora;
+
+        enemigo.invulnerable =
+            true;
 
         return;
     }
 
-    // Iniciar ataque
+
+    // ===============================
+    // ENTERRARSE
+    // ===============================
+
     if (
-        ahora >= enemigo.proximoDisparo
-        &&
-        ahora >= (enemigo.atacandoHasta || 0)
+        enemigo.estado === "burrow"
     ) {
 
-        enemigo.direccionAtaque =
-            enemigo.direccion;
+        const tiempoBurrow =
+            ahora - enemigo.estadoInicio;
 
-        enemigo.atacandoHasta =
-            ahora + 500;
+        // 4 frames × 400 ms = 1.6 segundos
+        if (
+            tiempoBurrow >= 1600
+        ) {
 
-            dispararAcidoRanger(enemigo);
+            enemigo.estado =
+                "hidden";
 
-        // Aproximadamente 1.8 segundos
-        // entre ataques.
-        enemigo.proximoDisparo =
-            ahora + 1800;
+            enemigo.estadoInicio =
+                ahora;
+        }
+
+        return;
+    }
+
+
+    // ===============================
+    // OCULTO BAJO TIERRA
+    // ===============================
+
+    if (
+        enemigo.estado === "hidden"
+    ) {
+
+        const tiempoOculto =
+            ahora - enemigo.estadoInicio;
+
+        // Permanece bajo tierra 4.8 segundos.
+        if (
+            tiempoOculto >= 4800
+        ) {
+
+            const margen = 180;
+
+            enemigo.x =
+                margen
+                +
+                Math.random()
+                *
+                (
+                    canvas.width
+                    -
+                    margen * 2
+                );
+
+            enemigo.y =
+                margen
+                +
+                Math.random()
+                *
+                (
+                    canvas.height
+                    -
+                    margen * 2
+                );
+
+
+            enemigo.estado =
+                "emerge";
+
+            enemigo.estadoInicio =
+                ahora;
+        }
+
+        return;
+    }
+
+// ===============================
+// INVOCACIÓN DE BICHOS
+// FASE 3
+// ===============================
+
+if (
+    enemigo.estado === "idle"
+    &&
+    enemigo.fase >= 3
+    &&
+    ahora >= enemigo.proximaInvocacion
+) {
+
+    invocarBichosHiveLord(
+        enemigo
+    );
+
+    enemigo.proximaInvocacion =
+        ahora + 7000;
+
+    enemigo.proximoAtaque =
+        ahora + 1200;
+
+    enemigo.proximoSlam =
+        ahora + 1800;
+
+    return;
+}
+
+// ===============================
+// INICIAR SLAM
+// ===============================
+
+if (
+    enemigo.estado === "idle"
+    &&
+    enemigo.fase >= 2
+    &&
+    ahora >= enemigo.proximoSlam
+) {
+
+    enemigo.estado =
+    "slam";
+
+enemigo.estadoInicio =
+    ahora;
+
+// Evita que el mismo slam
+// golpee varias veces.
+enemigo.slamGolpeRealizado =
+    false;
+
+return;
+}
+
+
+// ===============================
+// ANIMACIÓN DEL SLAM
+// ===============================
+
+if (
+    enemigo.estado === "slam"
+) {
+
+    const tiempoSlam =
+        ahora - enemigo.estadoInicio;
+
+
+    // ===============================
+    // IMPACTO DEL SLAM
+    // ===============================
+
+    if (
+        tiempoSlam >= 650
+        &&
+        !enemigo.slamGolpeRealizado
+    ) {
+
+        aplicarSlamHiveLord(
+            enemigo
+        );
+
+        enemigo.slamGolpeRealizado =
+            true;
+    }
+
+
+    // ===============================
+    // TERMINAR SLAM
+    // ===============================
+
+    if (
+        tiempoSlam >= 1000
+    ) {
+
+        enemigo.estado =
+            "idle";
+
+        enemigo.estadoInicio =
+            ahora;
+
+        enemigo.proximoSlam =
+            ahora + 6000;
+
+        enemigo.proximoAtaque =
+            ahora + 1000;
     }
 
     return;
 }
 
-        // Mientras reproduce su ataque se queda quieto.
+    // ===============================
+    // INICIAR ESCUPITAJO
+    // ===============================
+
+    if (
+        enemigo.estado === "idle"
+        &&
+        ahora >= enemigo.proximoAtaque
+    ) {
+
+        enemigo.estado =
+            "spit";
+
+        enemigo.estadoInicio =
+            ahora;
+
+        enemigo.disparoRealizado =
+            false;
+
+        return;
+    }
+
+
+    // ===============================
+    // ESCUPIR PROYECTIL
+    // ===============================
+
+    if (
+        enemigo.estado === "spit"
+    ) {
+
+        const tiempoAtaque =
+            ahora - enemigo.estadoInicio;
+
+
         if (
-            performance.now() <
+            tiempoAtaque >= 360
+            &&
+            !enemigo.disparoRealizado
+        ) {
+
+            dispararProyectilHiveLord(
+                enemigo
+            );
+
+            enemigo.disparoRealizado =
+                true;
+        }
+
+
+        if (
+            tiempoAtaque >= 720
+        ) {
+
+            enemigo.estado =
+                "idle";
+
+            enemigo.estadoInicio =
+                ahora;
+
+            enemigo.proximoAtaque =
+                ahora + 1800;
+        }
+
+        return;
+    }
+
+
+    // HiveLord nunca utiliza
+    // el movimiento normal.
+    return;
+}
+
+
+        // ===============================
+        // ATAQUE CUERPO A CUERPO
+        // ===============================
+
+        // Mientras reproduce su ataque,
+        // el enemigo se queda quieto.
+        if (
+            performance.now()
+            <
             (enemigo.atacandoHasta || 0)
         ) {
             return;
         }
+
+
+        // ===============================
+        // MOVIMIENTO HACIA ADO
+        // ===============================
 
         const diferenciaX =
             jugador.x - enemigo.x;
@@ -3577,12 +4119,20 @@ if (enemigo.tipo === "ranger") {
                 diferenciaY
             );
 
-        // Se detiene justo antes de atravesar al jugador.
-        const distanciaMinima =
-            jugador.radio +
-            enemigo.radio - 2;
 
-        if (distancia > distanciaMinima) {
+        // Se detiene justo antes
+        // de atravesar al jugador.
+        const distanciaMinima =
+            jugador.radio
+            +
+            enemigo.radio
+            -
+            2;
+
+
+        if (
+            distancia > distanciaMinima
+        ) {
 
             const angulo =
                 Math.atan2(
@@ -3596,13 +4146,16 @@ if (enemigo.tipo === "ranger") {
                     distancia - distanciaMinima
                 );
 
+
             enemigo.x +=
                 Math.cos(angulo)
-                * movimiento;
+                *
+                movimiento;
 
             enemigo.y +=
                 Math.sin(angulo)
-                * movimiento;
+                *
+                movimiento;
         }
 
     });
@@ -3658,6 +4211,380 @@ function dispararAcidoRanger(enemigo) {
     });
 
     reproducirSonido("rangerDisparo");
+}
+
+// ===============================
+// PROYECTIL DEL HIVELORD
+// ===============================
+
+function dispararProyectilHiveLord(enemigo) {
+
+    const diferenciaX =
+        jugador.x - enemigo.x;
+
+    const diferenciaY =
+        jugador.y - enemigo.y;
+
+    const angulo =
+        Math.atan2(
+            diferenciaY,
+            diferenciaX
+        );
+
+    const velocidad =
+        4.2;
+
+    const separacion =
+        enemigo.radio + 35;
+
+
+    proyectilesEnemigos.push({
+
+        tipo: "hivelord",
+
+        x:
+            enemigo.x
+            +
+            Math.cos(angulo)
+            * separacion,
+
+        y:
+            enemigo.y
+            +
+            Math.sin(angulo)
+            * separacion,
+
+        velocidadX:
+            Math.cos(angulo)
+            * velocidad,
+
+        velocidadY:
+            Math.sin(angulo)
+            * velocidad,
+
+        // Mucho más grande que
+        // el ácido del Ranger.
+        radio: 20,
+
+        daño: 18,
+
+        // Después lo utilizaremos
+        // para la explosión.
+        radioExplosion: 90
+    });
+}
+
+// ===============================
+// EXPLOSIÓN DEL PROYECTIL HIVELORD
+// ===============================
+
+function crearExplosionHiveLord(x, y) {
+
+    const radioExplosion = 95;
+    const dañoExplosion = 22;
+
+
+    // ===============================
+    // EFECTO VISUAL
+    // ===============================
+
+    explosionesEnergia.push({
+
+        tipo: "hivelord",
+
+        x: x,
+        y: y,
+
+        inicio:
+            performance.now(),
+
+        duracion: 350,
+
+        radioMaximo:
+            radioExplosion
+    });
+
+
+    // Partículas verdes/amarillas.
+    crearParticulas(
+        x,
+        y,
+        "#baff36",
+        30,
+        6,
+        5,
+        0.035
+    );
+
+
+    // ===============================
+    // DISTANCIA ENTRE EXPLOSIÓN Y ADO
+    // ===============================
+
+    const distancia =
+        Math.hypot(
+            jugador.x - x,
+            jugador.y - y
+        );
+
+
+    // ===============================
+    // DAÑO DE ÁREA A ADO
+    // ===============================
+
+    if (
+        distancia <=
+        radioExplosion + jugador.radio
+    ) {
+
+        jugador.vida -=
+            dañoExplosion;
+
+
+        if (
+            jugador.vida < 0
+        ) {
+
+            jugador.vida = 0;
+        }
+
+
+        hudVida.textContent =
+            jugador.vida;
+
+
+        reiniciarComboPorDaño();
+
+        crearParticulasDañoJugador();
+
+        reproducirSonido(
+            "adoHit"
+        );
+
+
+        const ahora =
+            performance.now();
+
+
+        jugador.hitInicio =
+            ahora;
+
+        jugador.hitHasta =
+            ahora + 440;
+
+
+        if (
+            jugador.vida <= 0
+        ) {
+
+            iniciarMuerte();
+        }
+    }
+}
+
+
+// ===============================
+// DAÑO DE ÁREA DEL SLAM
+// ===============================
+
+function aplicarSlamHiveLord(enemigo) {
+
+    const radioSlam = 650;
+    const dañoSlam = 25;
+
+    explosionesEnergia.push({
+    tipo: "slam",
+    x: enemigo.x,
+    y: enemigo.y,
+    inicio: performance.now(),
+    duracion: 450,
+    radioMaximo: radioSlam
+});
+
+
+    // ===============================
+    // DISTANCIA ENTRE HIVELORD Y ADO
+    // ===============================
+
+    const distancia =
+        Math.hypot(
+            jugador.x - enemigo.x,
+            jugador.y - enemigo.y
+        );
+
+
+    // ===============================
+    // EFECTO VISUAL DEL IMPACTO
+    // ===============================
+
+    crearParticulas(
+        enemigo.x,
+        enemigo.y,
+        "#baff36",
+        35,
+        8,
+        6,
+        0.04
+    );
+
+
+    // ===============================
+    // DAÑO A ADO
+    // ===============================
+
+    if (
+        distancia <=
+        radioSlam + jugador.radio
+    ) {
+
+        jugador.vida -=
+            dañoSlam;
+
+
+        if (
+            jugador.vida < 0
+        ) {
+
+            jugador.vida = 0;
+        }
+
+
+        hudVida.textContent =
+            jugador.vida;
+
+
+        reiniciarComboPorDaño();
+
+        crearParticulasDañoJugador();
+
+        reproducirSonido(
+            "adoHit"
+        );
+
+
+        const ahora =
+            performance.now();
+
+
+        jugador.hitInicio =
+            ahora;
+
+        jugador.hitHasta =
+            ahora + 440;
+
+
+        if (
+            jugador.vida <= 0
+        ) {
+
+            iniciarMuerte();
+        }
+    }
+}
+
+// ===============================
+// INVOCAR BICHOS - HIVELORD
+// ===============================
+
+function invocarBichosHiveLord(enemigo) {
+
+    // Contar solamente bichos
+    // invocados por el jefe.
+    const bichosInvocados =
+        enemigos.filter(
+            e => e.invocadoPorHiveLord
+        ).length;
+
+
+    // Máximo 6 invocados al mismo tiempo.
+    if (bichosInvocados >= 10) {
+        return;
+    }
+
+
+    // Efecto visual de invocación.
+    crearParticulas(
+        enemigo.x,
+        enemigo.y,
+        "#baff36",
+        45,
+        7,
+        6,
+        0.035
+    );
+
+
+    // Invocar 3 bichos.
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
+
+        // Usamos el enemigo normal
+        // que ya existe en el juego.
+        crearEnemigo();
+
+
+        // El enemigo recién creado
+        // es el último del arreglo.
+        const nuevoBicho =
+            enemigos[
+                enemigos.length - 1
+            ];
+
+
+        nuevoBicho.invocadoPorHiveLord =
+            true;
+
+
+        // Colocarlo alrededor del jefe.
+        const angulo =
+            Math.random()
+            *
+            Math.PI * 2;
+
+        const distancia =
+            130
+            +
+            Math.random() * 100;
+
+
+        nuevoBicho.x =
+            enemigo.x
+            +
+            Math.cos(angulo)
+            *
+            distancia;
+
+        nuevoBicho.y =
+            enemigo.y
+            +
+            Math.sin(angulo)
+            *
+            distancia;
+
+
+        // Evitar que aparezca fuera
+        // de la pantalla.
+        nuevoBicho.x =
+            Math.max(
+                40,
+                Math.min(
+                    canvas.width - 40,
+                    nuevoBicho.x
+                )
+            );
+
+        nuevoBicho.y =
+            Math.max(
+                40,
+                Math.min(
+                    canvas.height - 40,
+                    nuevoBicho.y
+                )
+            );
+    }
 }
 
 // ===============================
@@ -3820,14 +4747,21 @@ for (
     ) {
 
         const enemigo =
-            enemigos[j];
+    enemigos[j];
 
 
-        // Un enemigo que ya está muriendo
-        // no puede recibir más daño.
-        if (enemigo.muriendo) {
-            continue;
-        }
+// Un enemigo que ya está muriendo
+// no puede recibir más daño.
+if (enemigo.muriendo) {
+    continue;
+}
+
+
+// HiveLord no puede recibir daño
+// mientras está bajo tierra o emergiendo.
+if (enemigo.invulnerable) {
+    continue;
+}
     
 
 
@@ -4063,6 +4997,27 @@ for (
         distancia <
         proyectil.radio + jugador.radio
     ) {
+
+// ===============================
+// PROYECTIL EXPLOSIVO DEL HIVELORD
+// ===============================
+
+if (
+    proyectil.tipo === "hivelord"
+) {
+
+    crearExplosionHiveLord(
+        proyectil.x,
+        proyectil.y
+    );
+
+    proyectilesEnemigos.splice(
+        i,
+        1
+    );
+
+    continue;
+}
 
         // Quitar vida
         jugador.vida -=
@@ -4557,13 +5512,159 @@ function dibujarExplosionesEnergia(tiempo) {
         const explosion =
             explosionesEnergia[i];
 
+
+// ===============================
+// ONDA EXPANSIVA DEL SLAM
+// ===============================
+
+if (
+    explosion.tipo === "slam"
+) {
+
+    const progreso =
+        Math.max(
+            0,
+            (tiempo - explosion.inicio)
+            /
+            explosion.duracion
+        );
+
+
+    // Cuando termina,
+    // eliminamos la onda.
+    if (
+        progreso >= 1
+    ) {
+
+        explosionesEnergia.splice(
+            i,
+            1
+        );
+
+        continue;
+    }
+
+            // La onda comienza pequeña
+            // y crece hasta radioMaximo.
+            const radioActual =
+                explosion.radioMaximo
+                *
+                progreso;
+
+
+            ctx.save();
+
+
+            // ===============================
+            // RELLENO DE LA ONDA
+            // ===============================
+
+            ctx.beginPath();
+
+            ctx.arc(
+                explosion.x,
+                explosion.y,
+                radioActual,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fillStyle =
+                `rgba(
+                    186,
+                    255,
+                    54,
+                    ${0.10 * (1 - progreso)}
+                )`;
+
+            ctx.fill();
+
+
+            // ===============================
+            // ANILLO PRINCIPAL
+            // ===============================
+
+            ctx.beginPath();
+
+            ctx.arc(
+                explosion.x,
+                explosion.y,
+                radioActual,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.strokeStyle =
+                `rgba(
+                    220,
+                    255,
+                    120,
+                    ${1 - progreso}
+                )`;
+
+            ctx.lineWidth =
+                Math.max(
+                    4,
+                    18 * (1 - progreso)
+                );
+
+            ctx.stroke();
+
+
+            // ===============================
+            // SEGUNDO ANILLO
+            // ===============================
+
+            ctx.beginPath();
+
+            ctx.arc(
+                explosion.x,
+                explosion.y,
+                radioActual * 0.82,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.strokeStyle =
+                `rgba(
+                    255,
+                    255,
+                    255,
+                    ${0.55 * (1 - progreso)}
+                )`;
+
+            ctx.lineWidth =
+                Math.max(
+                    2,
+                    8 * (1 - progreso)
+                );
+
+            ctx.stroke();
+
+
+            ctx.restore();
+
+
+            // Muy importante:
+            // evita que esta onda también
+            // use el dibujo azul normal.
+            continue;
+        }
+
+
+        // ===============================
+        // EXPLOSIONES NORMALES
+        // ===============================
+
         const progreso =
             (tiempo - explosion.inicio)
             /
             explosion.duracion;
 
 
-        if (progreso >= 1) {
+        if (
+            progreso >= 1
+        ) {
 
             explosionesEnergia.splice(
                 i,
@@ -4604,6 +5705,7 @@ function dibujarExplosionesEnergia(tiempo) {
 
         ctx.fill();
 
+
         ctx.lineWidth =
             5 - 3 * progreso;
 
@@ -4613,13 +5715,16 @@ function dibujarExplosionesEnergia(tiempo) {
         ctx.stroke();
 
 
-        // Destello central para que la detonación se note mejor.
+        // Destello central.
         ctx.beginPath();
 
         ctx.arc(
             explosion.x,
             explosion.y,
-            Math.max(4, 18 * (1 - progreso)),
+            Math.max(
+                4,
+                18 * (1 - progreso)
+            ),
             0,
             Math.PI * 2
         );
@@ -4629,10 +5734,9 @@ function dibujarExplosionesEnergia(tiempo) {
 
         ctx.fill();
 
+
         ctx.restore();
-
     }
-
 }
 
 // ===============================
@@ -4794,6 +5898,523 @@ function dibujarTank(enemigo, tiempo, indice) {
 
         tamaño,
         tamaño
+    );
+
+
+    ctx.restore();
+}
+
+// ===============================
+// DIBUJAR JEFE - HIVELORD
+// ===============================
+
+function dibujarHiveLord(enemigo, tiempo, indice) {
+
+    const cantidadFrames = 4;
+
+    let sprite;
+    let frameActual = 0;
+
+    // Más grande que el Tank.
+    let tamaño = 340;
+
+
+// ===============================
+// DIRECCIÓN
+// ===============================
+
+const mirandoDerecha =
+    enemigo.direccion === "right";
+
+// ===============================
+// MUERTE DEL HIVELORD
+// ===============================
+
+if (
+    enemigo.muriendo
+) {
+
+    sprite =
+        hiveLordDeathLeft;
+
+    tamaño = 360;
+
+
+    const tiempoMuerte =
+        tiempo - enemigo.muerteInicio;
+
+
+    frameActual =
+        Math.floor(
+            tiempoMuerte / 220
+        );
+
+
+    // Cuando terminan los 4 frames
+    // eliminamos al jefe.
+    if (
+    frameActual >= cantidadFrames
+) {
+
+    enemigos.splice(
+        indice,
+        1
+    );
+
+
+    // ===============================
+    // REGRESAR A MÚSICA DE COMBATE
+    // ===============================
+
+    musicas.combate.currentTime =
+        tiempoMusicaCombateAntesJefe;
+
+    reproducirMusica(
+        "combate"
+    );
+
+
+    return;
+}
+
+
+    // Esperar a que cargue el sprite.
+    if (
+        !sprite.complete
+        ||
+        sprite.naturalWidth === 0
+    ) {
+        return;
+    }
+
+
+    const anchoFrameMuerte =
+        sprite.width /
+        cantidadFrames;
+
+    const altoFrameMuerte =
+        sprite.height;
+
+
+    ctx.save();
+
+
+    // Movemos el origen al centro
+    // del HiveLord.
+    ctx.translate(
+        enemigo.x,
+        enemigo.y
+    );
+
+
+    // death-left ya mira hacia una dirección.
+    // Para el lado contrario lo volteamos.
+    if (
+        !mirandoDerecha
+    ) {
+
+        ctx.scale(
+            -1,
+            1
+        );
+    }
+
+
+    ctx.drawImage(
+
+        sprite,
+
+        frameActual *
+        anchoFrameMuerte,
+
+        0,
+
+        anchoFrameMuerte,
+        altoFrameMuerte,
+
+        -tamaño / 2,
+        -tamaño / 2,
+
+        tamaño,
+        tamaño
+    );
+
+
+    ctx.restore();
+
+
+    // Muy importante:
+    // ya dibujamos la muerte aquí,
+    // así que no debe llegar al drawImage
+    // normal de abajo.
+    return;
+}
+
+
+// ===============================
+// SALIR DE LA TIERRA
+// ===============================
+
+else if (
+    enemigo.estado === "emerge"
+) {
+
+    sprite =
+        mirandoDerecha
+            ? hiveLordEmergeLeft
+            : hiveLordEmergeRight;
+
+    const tiempoAnimacion =
+        tiempo - enemigo.estadoInicio;
+
+
+    const frameEmerge =
+        Math.floor(
+            tiempoAnimacion / 400
+        );
+
+
+    // 4 frames × 400 ms = 1.6 segundos
+    if (
+        frameEmerge >= cantidadFrames
+    ) {
+
+        enemigo.estado =
+            "idle";
+
+        enemigo.estadoInicio =
+            tiempo;
+
+        enemigo.invulnerable =
+            false;
+
+
+        // Esperar 8 segundos antes
+        // de volver a enterrarse.
+        enemigo.proximoBurrow =
+            tiempo + 8000;
+
+
+        // Pequeño descanso antes
+        // del siguiente disparo.
+        enemigo.proximoAtaque =
+            tiempo + 1200;
+
+
+        frameActual = 0;
+
+        sprite =
+            mirandoDerecha
+                ? hiveLordIdleLeft
+                : hiveLordIdleRight;
+
+    } else {
+
+        // Reproducir el spritesheet al revés:
+        // 3 → 2 → 1 → 0
+        frameActual =
+            cantidadFrames - 1 - frameEmerge;
+    }
+}
+
+
+// ===============================
+// ENTERRARSE
+// ===============================
+
+else if (
+    enemigo.estado === "burrow"
+) {
+
+    sprite =
+        mirandoDerecha
+            ? hiveLordBurrowLeft
+            : hiveLordBurrowRight;
+
+    const tiempoBurrow =
+        tiempo - enemigo.estadoInicio;
+
+
+    const frameBurrow =
+        Math.min(
+            Math.floor(
+                tiempoBurrow / 400
+            ),
+            cantidadFrames - 1
+        );
+
+
+    frameActual =
+        cantidadFrames - 1 - frameBurrow;
+}
+
+
+// ===============================
+// OCULTO BAJO TIERRA
+// ===============================
+
+else if (
+    enemigo.estado === "hidden"
+) {
+
+    // Mientras está completamente
+    // enterrado no dibujamos nada.
+    return;
+}
+
+// ===============================
+// SLAM
+// ===============================
+
+else if (
+    enemigo.estado === "slam"
+) {
+
+    sprite =
+        mirandoDerecha
+            ? hiveLordSlamLeft
+            : hiveLordSlamRight;
+
+    const tiempoSlam =
+        tiempo - enemigo.estadoInicio;
+
+
+    frameActual =
+        Math.floor(
+            tiempoSlam / 250
+        );
+
+
+    frameActual =
+        Math.min(
+            frameActual,
+            cantidadFrames - 1
+        );
+}
+
+// ===============================
+// ESCUPIR
+// ===============================
+
+else if (
+    enemigo.estado === "spit"
+) {
+
+    sprite =
+        mirandoDerecha
+            ? hiveLordSpitLeft
+            : hiveLordSpitRight;
+
+    const tiempoAtaque =
+        tiempo - enemigo.estadoInicio;
+
+
+    frameActual =
+        Math.floor(
+            tiempoAtaque / 180
+        );
+
+
+    frameActual =
+        Math.min(
+            frameActual,
+            cantidadFrames - 1
+        );
+}
+
+
+// ===============================
+// IDLE ANIMADO
+// ===============================
+
+else {
+
+    sprite =
+        mirandoDerecha
+            ? hiveLordIdleLeft
+            : hiveLordIdleRight;
+
+
+    frameActual =
+        Math.floor(
+            tiempo / 180
+        )
+        %
+        cantidadFrames;
+}
+
+    // ===============================
+    // COMPROBAR SPRITE
+    // ===============================
+
+    if (
+        !sprite.complete
+        ||
+        sprite.naturalWidth === 0
+    ) {
+        return;
+    }
+
+
+    const anchoFrame =
+        sprite.width /
+        cantidadFrames;
+
+    const altoFrame =
+        sprite.height;
+
+
+    // ===============================
+    // DIBUJAR
+    // ===============================
+
+    ctx.drawImage(
+
+        sprite,
+
+        frameActual * anchoFrame,
+        0,
+
+        anchoFrame,
+        altoFrame,
+
+        enemigo.x - tamaño / 2,
+        enemigo.y - tamaño / 2,
+
+        tamaño,
+        tamaño
+    );
+}
+
+// ===============================
+// BARRA DE VIDA DEL HIVELORD
+// ===============================
+
+function dibujarBarraHiveLord() {
+
+    const jefe =
+        enemigos.find(
+            enemigo =>
+                enemigo.tipo === "hivelord"
+                &&
+                !enemigo.muriendo
+        );
+
+
+    // Si no está el jefe,
+    // no dibujamos nada.
+    if (!jefe) {
+        return;
+    }
+
+
+    const anchoBarra =
+        Math.min(
+            650,
+            canvas.width * 0.55
+        );
+
+    const altoBarra = 24;
+
+    const x =
+        canvas.width / 2
+        -
+        anchoBarra / 2;
+
+    const y = 55;
+
+
+    const porcentajeVida =
+        Math.max(
+            0,
+            jefe.vida / jefe.vidaMaxima
+        );
+
+
+    ctx.save();
+
+
+    // ===============================
+    // NOMBRE DEL JEFE
+    // ===============================
+
+    ctx.font =
+        "bold 20px Arial";
+
+    ctx.textAlign =
+        "center";
+
+    ctx.fillStyle =
+        "white";
+
+    ctx.fillText(
+        "HIVELORD",
+        canvas.width / 2,
+        y - 12
+    );
+
+
+    // ===============================
+    // FONDO DE LA BARRA
+    // ===============================
+
+    ctx.fillStyle =
+        "rgba(0, 0, 0, 0.75)";
+
+    ctx.fillRect(
+        x - 4,
+        y - 4,
+        anchoBarra + 8,
+        altoBarra + 8
+    );
+
+
+    // ===============================
+    // VIDA RESTANTE
+    // ===============================
+
+    ctx.fillStyle =
+        "#8cff32";
+
+    ctx.fillRect(
+        x,
+        y,
+        anchoBarra * porcentajeVida,
+        altoBarra
+    );
+
+
+    // ===============================
+    // BORDE
+    // ===============================
+
+    ctx.strokeStyle =
+        "white";
+
+    ctx.lineWidth = 2;
+
+    ctx.strokeRect(
+        x,
+        y,
+        anchoBarra,
+        altoBarra
+    );
+
+
+    // ===============================
+    // TEXTO DE VIDA
+    // ===============================
+
+    ctx.font =
+        "bold 14px Arial";
+
+    ctx.fillStyle =
+        "white";
+
+    ctx.fillText(
+        `${Math.max(0, Math.ceil(jefe.vida))} / ${jefe.vidaMaxima}`,
+        canvas.width / 2,
+        y + 17
     );
 
 
@@ -5017,6 +6638,17 @@ function dibujarEnemigos() {
 if (enemigo.tipo === "tank") {
 
     dibujarTank(
+        enemigo,
+        tiempo,
+        i
+    );
+
+    continue;
+}
+
+if (enemigo.tipo === "hivelord") {
+
+    dibujarHiveLord(
         enemigo,
         tiempo,
         i
@@ -6500,6 +8132,21 @@ dibujarMapa();
 
         // GENERAR ENEMIGOS
 
+// ===============================
+// HIVELORD - OLEADA 5
+// ===============================
+
+if (
+    oleada === 5
+    &&
+    !hiveLordOleada5Generado
+) {
+
+    crearHiveLord();
+
+    hiveLordOleada5Generado = true;
+}
+
 if (
     !esperandoOleada
     &&
@@ -6632,6 +8279,7 @@ if (
 
     dibujarArmaActual(tiempo);
 
+    dibujarBarraHiveLord();
 
     // DEBUG siempre se dibuja al final para quedar por encima
     // de sprites, partículas y proyectiles.
