@@ -1579,6 +1579,30 @@ const hiveLordDeathLeft = new Image();
 hiveLordDeathLeft.src =
     "assets/sprites/enemies/hivelord-boss/death-left.png";
 
+    // ===========================================================
+// SPRITES - CABALLO EXPLOSIVO
+// ===========================================================
+
+// CORRER
+
+const caballoRunLeft = new Image();
+caballoRunLeft.src =
+    "assets/sprites/enemies/caballo-explosivo/run-left.png";
+
+
+// EXPLOTAR
+
+const caballoExplodeLeft = new Image();
+caballoExplodeLeft.src =
+    "assets/sprites/enemies/caballo-explosivo/explode-left.png";
+
+
+// MUERTE
+
+const caballoDeathLeft = new Image();
+caballoDeathLeft.src =
+    "assets/sprites/enemies/caballo-explosivo/death-left.png";
+
 // ===============================
 // SPRITES DE ARMAS - INDICADOR
 // ===============================
@@ -5901,6 +5925,123 @@ function crearEnemigoTank() {
 }
 
 // ===============================
+// GENERAR CABALLO EXPLOSIVO
+// ===============================
+
+function crearCaballoExplosivo() {
+
+    let x;
+    let y;
+
+
+    // Elegir aleatoriamente uno
+    // de los cuatro lados del mapa.
+    const lado =
+        Math.floor(
+            Math.random() * 4
+        );
+
+
+    // Aparece fuera de la pantalla
+    // y entra corriendo.
+    if (lado === 0) {
+
+        x =
+            Math.random()
+            * canvas.width;
+
+        y = -50;
+    }
+
+
+    if (lado === 1) {
+
+        x =
+            canvas.width + 50;
+
+        y =
+            Math.random()
+            * canvas.height;
+    }
+
+
+    if (lado === 2) {
+
+        x =
+            Math.random()
+            * canvas.width;
+
+        y =
+            canvas.height + 50;
+    }
+
+
+    if (lado === 3) {
+
+        x = -50;
+
+        y =
+            Math.random()
+            * canvas.height;
+    }
+
+
+    enemigos.push({
+
+        tipo:
+            "caballo",
+
+        x: x,
+        y: y,
+
+
+        // Hitbox.
+        radio: 25,
+
+
+        // Corre bastante más rápido
+        // que un enemigo normal.
+        velocidad: 3.4,
+
+
+        // Debe poder eliminarse
+        // antes de alcanzar a Ado.
+        vida: 60,
+        vidaMaxima: 60,
+
+
+        // Siempre comienza corriendo.
+        estado:
+            "run",
+
+        estadoInicio:
+            performance.now(),
+
+
+        // Control de la explosión.
+        explosionRealizada:
+            false,
+
+
+        // Dirección visual.
+        direccion:
+            jugador.x >= x
+                ? "right"
+                : "left",
+
+
+        // Animación de muerte.
+        muriendo: false,
+
+        muerteInicio: 0,
+        muerteHasta: 0,
+
+        direccionMuerte:
+            "left"
+    });
+}
+
+// ===============================
 // GENERAR JEFE - HIVELORD
 // ===============================
 
@@ -6396,6 +6537,172 @@ if (
     return;
 }
 
+// ===============================
+// COMPORTAMIENTO DEL CABALLO EXPLOSIVO
+// ===============================
+
+if (enemigo.tipo === "caballo") {
+
+    const ahora =
+        performance.now();
+
+
+    // ===============================
+    // SI YA ESTÁ EXPLOTANDO
+    // ===============================
+
+    // Mientras reproduce la animación
+    // de explosión ya no puede moverse.
+    if (
+    enemigo.estado === "explode"
+) {
+
+    const tiempoExplosion =
+        ahora - enemigo.estadoInicio;
+
+
+    // ===============================
+    // DETONAR UNA SOLA VEZ
+    // ===============================
+
+    if (
+        tiempoExplosion >= 300
+        &&
+        !enemigo.explosionRealizada
+    ) {
+
+        explotarCaballo(
+            enemigo
+        );
+
+        enemigo.explosionRealizada =
+            true;
+    }
+
+
+    // El caballo permanece quieto
+    // mientras termina su animación.
+    return;
+}
+
+
+    // ===============================
+    // DIRECCIÓN HACIA ADO
+    // ===============================
+
+    const diferenciaX =
+        jugador.x - enemigo.x;
+
+    const diferenciaY =
+        jugador.y - enemigo.y;
+
+
+    const distancia =
+        Math.hypot(
+            diferenciaX,
+            diferenciaY
+        );
+
+
+    enemigo.direccion =
+        jugador.x >= enemigo.x
+            ? "right"
+            : "left";
+
+
+    // ===============================
+    // DISTANCIA PARA EXPLOTAR
+    // ===============================
+
+    const distanciaExplosion =
+        jugador.radio
+        +
+        enemigo.radio
+        +
+        8;
+
+
+    // Si consigue llegar hasta Ado,
+    // deja de correr y comienza
+    // inmediatamente su explosión.
+    if (
+        distancia <=
+        distanciaExplosion
+    ) {
+
+        enemigo.estado =
+            "explode";
+
+        enemigo.estadoInicio =
+            ahora;
+
+        enemigo.explosionRealizada =
+            false;
+
+        return;
+    }
+
+
+    // ===============================
+    // CORRER DIRECTAMENTE HACIA ADO
+    // ===============================
+
+    const angulo =
+    Math.atan2(
+        diferenciaY,
+        diferenciaX
+    );
+
+
+// Aplicamos también la posible
+// ralentización de enemigos.
+const movimiento =
+    enemigo.velocidad
+    *
+    obtenerFactorVelocidadEnemigosPowerUp();
+
+
+const pasoX =
+    Math.cos(angulo)
+    *
+    movimiento;
+
+const pasoY =
+    Math.sin(angulo)
+    *
+    movimiento;
+
+
+// ===============================
+// MOVIMIENTO EN X
+// ===============================
+
+enemigo.x +=
+    pasoX;
+
+resolverEntidadContraObstaculos(
+    enemigo
+);
+
+
+// ===============================
+// MOVIMIENTO EN Y
+// ===============================
+
+enemigo.y +=
+    pasoY;
+
+resolverEntidadContraObstaculos(
+    enemigo
+);
+
+
+    // Muy importante:
+    // evita que utilice después
+    // el movimiento normal del resto.
+    return;
+}
+
 
         // ===============================
         // ATAQUE CUERPO A CUERPO
@@ -6723,6 +7030,117 @@ function crearExplosionHiveLord(x, y) {
 // ===============================
 // DAÑO DE ÁREA DEL SLAM
 // ===============================
+
+// ===============================
+// EXPLOSIÓN DEL CABALLO
+// ===============================
+
+function explotarCaballo(enemigo) {
+
+    const radioExplosion = 180;
+    const dañoExplosion = 30;
+
+
+    // ===============================
+    // ONDA EXPANSIVA
+    // ===============================
+
+    explosionesEnergia.push({
+
+        tipo: "explosionCaballo",
+
+        x: enemigo.x,
+        y: enemigo.y,
+
+        inicio:
+            performance.now(),
+
+        duracion: 380,
+
+        radioMaximo:
+            radioExplosion
+    });
+
+
+    // ===============================
+    // PARTÍCULAS
+    // ===============================
+
+    crearParticulas(
+        enemigo.x,
+        enemigo.y,
+        "#ff7a24",
+        35,
+        8,
+        6,
+        0.04
+    );
+
+
+    // ===============================
+    // DISTANCIA HASTA ADO
+    // ===============================
+
+    const distancia =
+        Math.hypot(
+            jugador.x - enemigo.x,
+            jugador.y - enemigo.y
+        );
+
+
+    // ===============================
+    // DAÑO DE ÁREA
+    // ===============================
+
+    if (
+        distancia <=
+        radioExplosion + jugador.radio
+    ) {
+
+        jugador.vida -=
+            dañoExplosion;
+
+
+        if (
+            jugador.vida < 0
+        ) {
+
+            jugador.vida = 0;
+        }
+
+
+        hudVida.textContent =
+            jugador.vida;
+
+
+        reiniciarComboPorDaño();
+
+        crearParticulasDañoJugador();
+
+        reproducirSonido(
+            "adoHit"
+        );
+
+
+        const ahora =
+            performance.now();
+
+
+        jugador.hitInicio =
+            ahora;
+
+        jugador.hitHasta =
+            ahora + 440;
+
+
+        if (
+            jugador.vida <= 0
+        ) {
+
+            iniciarMuerte();
+        }
+    }
+}
 
 function aplicarSlamHiveLord(enemigo) {
 
@@ -8106,6 +8524,137 @@ function dibujarExplosionesEnergia(tiempo) {
         const explosion =
             explosionesEnergia[i];
 
+            // ===============================
+// ONDA EXPANSIVA DEL CABALLO
+// ===============================
+
+if (
+    explosion.tipo === "explosionCaballo"
+) {
+
+    const progreso =
+        Math.max(
+            0,
+            (tiempo - explosion.inicio)
+            /
+            explosion.duracion
+        );
+
+
+    if (
+        progreso >= 1
+    ) {
+
+        explosionesEnergia.splice(
+            i,
+            1
+        );
+
+        continue;
+    }
+
+
+    const radioActual =
+        explosion.radioMaximo
+        *
+        progreso;
+
+
+    ctx.save();
+
+
+    // ===============================
+    // RELLENO
+    // ===============================
+
+    ctx.beginPath();
+
+    ctx.arc(
+        explosion.x,
+        explosion.y,
+        radioActual,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle =
+        `rgba(
+            255,
+            90,
+            25,
+            ${0.15 * (1 - progreso)}
+        )`;
+
+    ctx.fill();
+
+
+    // ===============================
+    // ANILLO PRINCIPAL
+    // ===============================
+
+    ctx.beginPath();
+
+    ctx.arc(
+        explosion.x,
+        explosion.y,
+        radioActual,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.strokeStyle =
+        `rgba(
+            255,
+            145,
+            45,
+            ${1 - progreso}
+        )`;
+
+    ctx.lineWidth =
+        Math.max(
+            3,
+            14 * (1 - progreso)
+        );
+
+    ctx.stroke();
+
+
+    // ===============================
+    // ANILLO INTERIOR
+    // ===============================
+
+    ctx.beginPath();
+
+    ctx.arc(
+        explosion.x,
+        explosion.y,
+        radioActual * 0.75,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.strokeStyle =
+        `rgba(
+            255,
+            235,
+            180,
+            ${0.65 * (1 - progreso)}
+        )`;
+
+    ctx.lineWidth =
+        Math.max(
+            2,
+            6 * (1 - progreso)
+        );
+
+    ctx.stroke();
+
+
+    ctx.restore();
+
+    continue;
+}
+
 
 // ===============================
 // ONDA EXPANSIVA DEL SLAM
@@ -8336,6 +8885,228 @@ if (
 // ===============================
 // DIBUJAR ENEMIGOS
 // ===============================
+
+// ===============================
+// DIBUJAR CABALLO EXPLOSIVO
+// ===============================
+
+function dibujarCaballoExplosivo(
+    enemigo,
+    tiempo,
+    indice
+) {
+
+    let sprite;
+    let frameActual = 0;
+
+    const cantidadFrames = 4;
+
+
+    // ===============================
+    // MUERTE
+    // ===============================
+
+    if (
+        enemigo.muriendo
+    ) {
+
+        sprite =
+            caballoDeathLeft;
+
+        const tiempoMuerte =
+            tiempo
+            -
+            enemigo.muerteInicio;
+
+
+        frameActual =
+            Math.min(
+                Math.floor(
+                    tiempoMuerte / 140
+                ),
+                cantidadFrames - 1
+            );
+
+
+        // Cuando termina la animación,
+        // eliminamos el caballo.
+        if (
+            tiempo >=
+            enemigo.muerteHasta
+        ) {
+
+            enemigos.splice(
+                indice,
+                1
+            );
+
+            return;
+        }
+    }
+
+
+    // ===============================
+    // EXPLOSIÓN
+    // ===============================
+
+    else if (
+        enemigo.estado === "explode"
+    ) {
+
+        sprite =
+            caballoExplodeLeft;
+
+
+        const tiempoExplosion =
+            tiempo
+            -
+            enemigo.estadoInicio;
+
+
+        frameActual =
+            Math.min(
+                Math.floor(
+                    tiempoExplosion / 150
+                ),
+                cantidadFrames - 1
+            );
+
+
+        // Cuando acaba la animación
+        // de explosión, desaparece.
+        if (
+            tiempoExplosion >= 600
+        ) {
+
+            enemigos.splice(
+                indice,
+                1
+            );
+
+            return;
+        }
+    }
+
+
+    // ===============================
+    // CORRIENDO
+    // ===============================
+
+    else {
+
+        sprite =
+            caballoRunLeft;
+
+
+        frameActual =
+            Math.floor(
+                tiempo / 120
+            )
+            %
+            cantidadFrames;
+    }
+
+
+    // ===============================
+    // SPRITE NO CARGADO
+    // ===============================
+
+    if (
+        !sprite.complete
+        ||
+        sprite.naturalWidth === 0
+    ) {
+
+        ctx.beginPath();
+
+        ctx.arc(
+            enemigo.x,
+            enemigo.y,
+            enemigo.radio,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            "#ff7a24";
+
+        ctx.fill();
+
+        return;
+    }
+
+
+    const anchoFrame =
+        sprite.naturalWidth
+        /
+        cantidadFrames;
+
+    const altoFrame =
+        sprite.naturalHeight;
+
+
+    // Tamaño visual del caballo.
+    const altoSprite =
+        200;
+
+    const anchoSprite =
+        altoSprite
+        *
+        (
+            anchoFrame
+            /
+            altoFrame
+        );
+
+
+    ctx.save();
+
+
+    // Dibujamos desde el centro
+    // para poder voltearlo horizontalmente.
+    ctx.translate(
+        enemigo.x,
+        enemigo.y
+    );
+
+
+    // Nuestros tres sprites son LEFT.
+    // Cuando el caballo mira a la derecha,
+    // lo volteamos horizontalmente.
+    if (
+    enemigo.direccion === "left"
+) {
+
+    ctx.scale(
+        -1,
+        1
+    );
+}
+
+
+    ctx.drawImage(
+
+        sprite,
+
+        frameActual
+        *
+        anchoFrame,
+
+        0,
+
+        anchoFrame,
+        altoFrame,
+
+        -anchoSprite / 2,
+        -altoSprite / 2,
+
+        anchoSprite,
+        altoSprite
+    );
+
+
+    ctx.restore();
+}
 
 // ===============================
 // DIBUJAR BICHO TANK
@@ -9239,6 +10010,18 @@ if (enemigo.tipo === "tank") {
 
     continue;
 }
+
+if (enemigo.tipo === "caballo") {
+
+    dibujarCaballoExplosivo(
+        enemigo,
+        tiempo,
+        i
+    );
+
+    continue;
+}
+
 
 if (enemigo.tipo === "hivelord") {
 
@@ -10816,6 +11599,12 @@ if (
         )
     );
 
+    const cantidadCaballos =
+    Math.max(
+        0,
+        oleada - 1
+    );
+
     if (
     enemigosGenerados <
     cantidadRangers
@@ -10831,6 +11620,17 @@ if (
 ) {
 
     crearEnemigoTank();
+
+} else if (
+    enemigosGenerados <
+    cantidadRangers
+    +
+    cantidadTanks
+    +
+    cantidadCaballos
+) {
+
+    crearCaballoExplosivo();
 
 } else {
 
