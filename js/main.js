@@ -756,6 +756,11 @@ instrucciones.innerHTML = `
                 </div>
 
                 <div class="instruccionFila">
+                    <span class="teclaInstruccion">Q</span>
+                    <span>Pulso Hexa · daño de área y empuje</span>
+                </div>
+
+                <div class="instruccionFila">
                     <span class="teclaInstruccion">P / ESC</span>
                     <span>Pausar / continuar</span>
                 </div>
@@ -826,6 +831,14 @@ instrucciones.innerHTML = `
                         Se utilizan para comprar mejoras en la tienda.
                     </span>
                 </div>
+
+                <div class="recursoInstruccion">
+                    <strong>✨ POWER-UPS</strong>
+                    <span>
+                        Fragmento Hexa: +2 cores · Sobrecarga: +30 % daño ·
+                        Distorsión: enemigos -35 % velocidad · Resonancia: x2 XP.
+                    </span>
+                </div>
             </article>
 
 
@@ -840,6 +853,11 @@ instrucciones.innerHTML = `
                 <p>
                     Al subir de nivel podrás elegir mejoras para Ado.
                     Entre oleadas también aparecerá la tienda cuando corresponda.
+                </p>
+
+                <p>
+                    Los obstáculos cambian de posición en cada oleada.
+                    Bloquean movimiento, proyectiles y habilidades de área.
                 </p>
 
                 <p>
@@ -1261,6 +1279,84 @@ mapaJuego.src =
     "assets/img/maps/mapa_zocalo.png";
 
 
+// ===========================================================
+// OBSTÁCULOS DEL ESCENARIO
+// ===========================================================
+// Los PNG originales pueden conservar sus dimensiones grandes.
+// Canvas los escala al tamaño visual indicado.
+//
+// IMPORTANTE:
+// El tamaño del sprite y la hitbox rectangular son independientes.
+// De esta forma el objeto puede tener transparencias alrededor sin
+// hacer que la colisión se sienta demasiado grande.
+// ===========================================================
+
+const spriteBarricadaPiedra = new Image();
+spriteBarricadaPiedra.src =
+    "assets/sprites/obstacles/barricada_piedra.png";
+
+const spriteBarricadaMetal = new Image();
+spriteBarricadaMetal.src =
+    "assets/sprites/obstacles/barricada_metal.png";
+
+const spriteAutoDestruido = new Image();
+spriteAutoDestruido.src =
+    "assets/sprites/obstacles/auto_destruido.png";
+
+const spriteEscombros = new Image();
+spriteEscombros.src =
+    "assets/sprites/obstacles/escombros.png";
+
+
+const tiposObstaculos = [
+
+    {
+        tipo: "barricada_piedra",
+        imagen: spriteBarricadaPiedra,
+
+        anchoVisual: 220,
+        altoVisual: 110,
+
+        anchoColision: 198,
+        altoColision: 76
+    },
+
+    {
+        tipo: "barricada_metal",
+        imagen: spriteBarricadaMetal,
+
+        anchoVisual: 220,
+        altoVisual: 110,
+
+        anchoColision: 198,
+        altoColision: 76
+    },
+
+    {
+        tipo: "auto_destruido",
+        imagen: spriteAutoDestruido,
+
+        anchoVisual: 192,
+        altoVisual: 110,
+
+        anchoColision: 170,
+        altoColision: 70
+    },
+
+    {
+        tipo: "escombros",
+        imagen: spriteEscombros,
+
+        anchoVisual: 220,
+        altoVisual: 124,
+
+        anchoColision: 188,
+        altoColision: 78
+    }
+
+];
+
+
 // ===============================
 // SPRITES DEL JUGADOR
 // ===============================
@@ -1295,6 +1391,20 @@ function cargarSpritesAdo() {
 }
 
 const spritesAdo = cargarSpritesAdo();
+
+
+// ===========================================================
+// HABILIDAD ESPECIAL DE ADO - PULSO HEXA
+// ===========================================================
+// Sprite generado como una cuadrícula de 4 columnas x 2 filas.
+// Ruta esperada:
+// assets/sprites/skills/ado/pulso_hexa.png
+// ===========================================================
+
+const spritePulsoHexa = new Image();
+spritePulsoHexa.src =
+    "assets/sprites/skills/ado/pulso_hexa.png";
+
 
 const tamañosSprites = {
 
@@ -1486,6 +1596,114 @@ spriteEnergia.src =
     "assets/sprites/weapons/ui/energia.png";
 
 
+// ===========================================================
+// SPRITES DE PROYECTILES
+// ===========================================================
+// Cada imagen contiene 4 frames horizontales.
+// El tamaño ORIGINAL del PNG no importa: el código divide
+// automáticamente el ancho entre 4 y lo escala al tamaño
+// definido para el juego.
+// ===========================================================
+
+const spriteProyectilPistola = new Image();
+spriteProyectilPistola.src =
+    "assets/sprites/projectiles/ado/pistola.png";
+
+const spriteProyectilEscopeta = new Image();
+spriteProyectilEscopeta.src =
+    "assets/sprites/projectiles/ado/escopeta.png";
+
+const spriteProyectilEnergia = new Image();
+spriteProyectilEnergia.src =
+    "assets/sprites/projectiles/ado/energia.png";
+
+const spriteProyectilRanger = new Image();
+spriteProyectilRanger.src =
+    "assets/sprites/projectiles/enemies/ranger.png";
+
+
+const datosSpritesProyectiles = {
+
+    pistola: {
+        imagen: spriteProyectilPistola,
+        tamaño: 34,
+        radioBase: 6
+    },
+
+    escopeta: {
+        imagen: spriteProyectilEscopeta,
+        tamaño: 26,
+        radioBase: 5
+    },
+
+    energia: {
+        imagen: spriteProyectilEnergia,
+        tamaño: 46,
+        radioBase: 10
+    },
+
+    acido: {
+        imagen: spriteProyectilRanger,
+        tamaño: 32,
+        radioBase: 8
+    }
+
+};
+
+
+// ===========================================================
+// SPRITES DE POWER-UPS
+// ===========================================================
+// Los PNG originales pueden conservar su tamaño de 1254 x 1254.
+// Canvas los escala al tamaño visual configurado aquí.
+// ===========================================================
+
+const spriteFragmentoHexa = new Image();
+spriteFragmentoHexa.src =
+    "assets/sprites/powerups/fragmento_hexa.png";
+
+const spriteSobrecarga = new Image();
+spriteSobrecarga.src =
+    "assets/sprites/powerups/sobrecarga.png";
+
+const spriteDistorsionTemporal = new Image();
+spriteDistorsionTemporal.src =
+    "assets/sprites/powerups/distorsion_temporal.png";
+
+const spriteResonanciaXP = new Image();
+spriteResonanciaXP.src =
+    "assets/sprites/powerups/resonancia_xp.png";
+
+
+const datosPowerUps = {
+
+    fragmento_hexa: {
+        imagen: spriteFragmentoHexa,
+        tamaño: 58,
+        color: "#56f4ff"
+    },
+
+    sobrecarga: {
+        imagen: spriteSobrecarga,
+        tamaño: 58,
+        color: "#ff7447"
+    },
+
+    distorsion_temporal: {
+        imagen: spriteDistorsionTemporal,
+        tamaño: 60,
+        color: "#8574ff"
+    },
+
+    resonancia_xp: {
+        imagen: spriteResonanciaXP,
+        tamaño: 60,
+        color: "#ff65ed"
+    }
+
+};
+
+
 const armas = {
 
     // ===========================================================
@@ -1652,8 +1870,48 @@ let proyectiles = [];
 let proyectilesEnemigos = [];
 let enemigos = [];
 
+// Se regeneran con posiciones nuevas al comenzar cada oleada.
+let obstaculos = [];
+
 // Efectos visuales de las detonaciones del arma de energía.
 let explosionesEnergia = [];
+
+
+// ===========================================================
+// PULSO HEXA
+// ===========================================================
+// Habilidad independiente de las armas.
+// Q = activar.
+// No consume energía.
+// El cooldown usa tiempo real DE JUEGO, por lo que se congela
+// durante pausa, tienda y selección de mejoras.
+// ===========================================================
+
+const dañoPulsoHexa = 30;
+const radioPulsoHexa = 160;
+const cooldownPulsoHexa = 8000;
+
+let ultimoUsoPulsoHexa = -Infinity;
+let pulsoHexaVisual = null;
+
+
+// ===========================================================
+// POWER-UPS RECOLECTABLES
+// ===========================================================
+// 0.08 = 8 % de probabilidad por enemigo eliminado.
+// Los efectos se miden con tiempoJugadoMs, así que se congelan
+// durante pausa, tienda y selección de mejoras.
+// ===========================================================
+
+const probabilidadDropPowerUp = 0.08;
+const duracionPowerUpEnSuelo = 12000;
+
+let powerUps = [];
+
+let sobrecargaHasta = 0;
+let distorsionTemporalHasta = 0;
+let resonanciaXPHasta = 0;
+
 
 // Partículas de impactos, muertes, daño a Ado y subida de nivel.
 let particulas = [];
@@ -1796,7 +2054,13 @@ function actualizarHUDExperiencia() {
 
 function agregarExperiencia(cantidad) {
 
-    experiencia += cantidad;
+    const multiplicadorXP =
+        obtenerMultiplicadorXPPowerUp();
+
+    experiencia +=
+        cantidad
+        *
+        multiplicadorXP;
 
     // El while permite que una explosión que mate muchos enemigos
     // pueda acumular más de una subida de nivel sin perder XP.
@@ -1949,6 +2213,547 @@ function aplicarMejoraNivel(tipoMejora) {
 
     }
 
+}
+
+
+// ===========================================================
+// POWER-UPS
+// ===========================================================
+
+function obtenerMultiplicadorDañoPowerUp() {
+
+    return (
+        tiempoJugadoMs
+        <
+        sobrecargaHasta
+    )
+        ? 1.30
+        : 1;
+}
+
+
+function obtenerFactorVelocidadEnemigosPowerUp() {
+
+    return (
+        tiempoJugadoMs
+        <
+        distorsionTemporalHasta
+    )
+        ? 0.65
+        : 1;
+}
+
+
+function obtenerMultiplicadorXPPowerUp() {
+
+    return (
+        tiempoJugadoMs
+        <
+        resonanciaXPHasta
+    )
+        ? 2
+        : 1;
+}
+
+
+// ===========================================================
+// INTENTAR SOLTAR POWER-UP
+// ===========================================================
+
+function intentarSoltarPowerUp(enemigo) {
+
+    // El jefe no utiliza estos drops normales.
+    if (
+        !enemigo
+        ||
+        enemigo.esJefe
+    ) {
+        return;
+    }
+
+
+    // Evita llenar demasiado el mapa.
+    if (powerUps.length >= 6) {
+        return;
+    }
+
+
+    if (
+        Math.random()
+        >
+        probabilidadDropPowerUp
+    ) {
+        return;
+    }
+
+
+    const tipos = [
+        "fragmento_hexa",
+        "sobrecarga",
+        "distorsion_temporal",
+        "resonancia_xp"
+    ];
+
+
+    const tipo =
+        tipos[
+            Math.floor(
+                Math.random()
+                *
+                tipos.length
+            )
+        ];
+
+
+    powerUps.push({
+
+        tipo: tipo,
+
+        x: enemigo.x,
+        y: enemigo.y,
+
+        radio: 24,
+
+        creadoEn:
+            tiempoJugadoMs,
+
+        expiraEn:
+            tiempoJugadoMs
+            +
+            duracionPowerUpEnSuelo
+    });
+}
+
+
+// ===========================================================
+// APLICAR POWER-UP
+// ===========================================================
+
+function aplicarPowerUp(tipo) {
+
+    if (
+        tipo === "fragmento_hexa"
+    ) {
+
+        hexaCores += 2;
+
+        hudHexa.textContent =
+            hexaCores;
+
+    } else if (
+        tipo === "sobrecarga"
+    ) {
+
+        sobrecargaHasta =
+            Math.max(
+                sobrecargaHasta,
+                tiempoJugadoMs
+            )
+            +
+            8000;
+
+    } else if (
+        tipo === "distorsion_temporal"
+    ) {
+
+        distorsionTemporalHasta =
+            Math.max(
+                distorsionTemporalHasta,
+                tiempoJugadoMs
+            )
+            +
+            6000;
+
+    } else if (
+        tipo === "resonancia_xp"
+    ) {
+
+        resonanciaXPHasta =
+            Math.max(
+                resonanciaXPHasta,
+                tiempoJugadoMs
+            )
+            +
+            10000;
+    }
+
+
+    reproducirSonido(
+        "compra"
+    );
+
+
+    const datos =
+        datosPowerUps[tipo];
+
+    crearParticulas(
+        jugador.x,
+        jugador.y,
+        datos
+            ? datos.color
+            : "#ffffff",
+        26,
+        6,
+        4,
+        0.035
+    );
+}
+
+
+// ===========================================================
+// ACTUALIZAR / RECOGER POWER-UPS
+// ===========================================================
+
+function actualizarPowerUps() {
+
+    for (
+        let i = powerUps.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const powerUp =
+            powerUps[i];
+
+
+        if (
+            tiempoJugadoMs
+            >=
+            powerUp.expiraEn
+        ) {
+
+            powerUps.splice(
+                i,
+                1
+            );
+
+            continue;
+        }
+
+
+        const distancia =
+            Math.hypot(
+                jugador.x - powerUp.x,
+                jugador.y - powerUp.y
+            );
+
+
+        // PLAYER VS POWER-UP
+        if (
+            distancia
+            <=
+            jugador.radio
+            +
+            powerUp.radio
+        ) {
+
+            aplicarPowerUp(
+                powerUp.tipo
+            );
+
+
+            powerUps.splice(
+                i,
+                1
+            );
+        }
+    }
+}
+
+
+// ===========================================================
+// DIBUJAR POWER-UPS
+// ===========================================================
+
+function dibujarPowerUps() {
+
+    powerUps.forEach(
+        function (powerUp) {
+
+            const datos =
+                datosPowerUps[
+                    powerUp.tipo
+                ];
+
+            if (!datos) {
+                return;
+            }
+
+
+            const flotacion =
+                Math.sin(
+                    (
+                        tiempoJugadoMs
+                        +
+                        powerUp.x * 3
+                    )
+                    /
+                    260
+                )
+                *
+                4;
+
+
+            const restante =
+                powerUp.expiraEn
+                -
+                tiempoJugadoMs;
+
+
+            ctx.save();
+
+
+            // En los últimos 2 segundos parpadea.
+            if (
+                restante < 2000
+            ) {
+
+                ctx.globalAlpha =
+                    (
+                        Math.floor(
+                            tiempoJugadoMs
+                            /
+                            120
+                        )
+                        %
+                        2
+                        === 0
+                    )
+                        ? 1
+                        : 0.38;
+            }
+
+
+            ctx.shadowColor =
+                datos.color;
+
+            ctx.shadowBlur = 18;
+
+
+            const imagen =
+                datos.imagen;
+
+            const tamaño =
+                datos.tamaño;
+
+
+            if (
+                imagen.complete
+                &&
+                imagen.naturalWidth > 0
+                &&
+                imagen.naturalHeight > 0
+            ) {
+
+                ctx.drawImage(
+                    imagen,
+
+                    powerUp.x
+                    -
+                    tamaño / 2,
+
+                    powerUp.y
+                    -
+                    tamaño / 2
+                    +
+                    flotacion,
+
+                    tamaño,
+                    tamaño
+                );
+
+            } else {
+
+                // Respaldo si falta un PNG.
+                ctx.beginPath();
+
+                ctx.arc(
+                    powerUp.x,
+                    powerUp.y
+                    +
+                    flotacion,
+                    powerUp.radio,
+                    0,
+                    Math.PI * 2
+                );
+
+                ctx.fillStyle =
+                    datos.color;
+
+                ctx.fill();
+            }
+
+
+            ctx.restore();
+
+        }
+    );
+}
+
+
+// ===========================================================
+// HUD DE EFECTOS TEMPORALES
+// ===========================================================
+
+function dibujarEstadoPowerUps() {
+
+    if (
+        !juegoActivo
+        ||
+        !jugador
+    ) {
+        return;
+    }
+
+
+    const estados = [];
+
+
+    if (
+        tiempoJugadoMs
+        <
+        sobrecargaHasta
+    ) {
+
+        estados.push(
+            "🔥 SOBRECARGA +30%: "
+            +
+            (
+                (
+                    sobrecargaHasta
+                    -
+                    tiempoJugadoMs
+                )
+                /
+                1000
+            ).toFixed(1)
+            +
+            "s"
+        );
+    }
+
+
+    if (
+        tiempoJugadoMs
+        <
+        distorsionTemporalHasta
+    ) {
+
+        estados.push(
+            "⏳ DISTORSIÓN -35%: "
+            +
+            (
+                (
+                    distorsionTemporalHasta
+                    -
+                    tiempoJugadoMs
+                )
+                /
+                1000
+            ).toFixed(1)
+            +
+            "s"
+        );
+    }
+
+
+    if (
+        tiempoJugadoMs
+        <
+        resonanciaXPHasta
+    ) {
+
+        estados.push(
+            "✨ RESONANCIA XP x2: "
+            +
+            (
+                (
+                    resonanciaXPHasta
+                    -
+                    tiempoJugadoMs
+                )
+                /
+                1000
+            ).toFixed(1)
+            +
+            "s"
+        );
+    }
+
+
+    if (
+        estados.length === 0
+    ) {
+        return;
+    }
+
+
+    ctx.save();
+
+    ctx.font =
+        "bold 14px Arial";
+
+    ctx.textAlign =
+        "left";
+
+    ctx.textBaseline =
+        "middle";
+
+
+    const x = 18;
+    const yBase =
+        canvas.height - 34;
+
+    const ancho = 245;
+    const altoFila = 30;
+
+
+    estados.forEach(
+        function (texto, indice) {
+
+            const y =
+                yBase
+                -
+                indice
+                *
+                (altoFila + 5);
+
+
+            ctx.fillStyle =
+                "rgba(5, 10, 22, 0.74)";
+
+            ctx.fillRect(
+                x,
+                y - altoFila / 2,
+                ancho,
+                altoFila
+            );
+
+
+            ctx.strokeStyle =
+                "rgba(110, 220, 255, 0.38)";
+
+            ctx.strokeRect(
+                x,
+                y - altoFila / 2,
+                ancho,
+                altoFila
+            );
+
+
+            ctx.fillStyle =
+                "#f4f7ff";
+
+            ctx.fillText(
+                texto,
+                x + 10,
+                y
+            );
+
+        }
+    );
+
+    ctx.restore();
 }
 
 
@@ -2457,6 +3262,18 @@ function iniciarJuego() {
     explosionesEnergia = [];
     particulas = [];
 
+    // Pulso Hexa disponible desde el inicio de cada partida.
+    ultimoUsoPulsoHexa = -Infinity;
+    pulsoHexaVisual = null;
+
+    // Limpiar objetos y efectos temporales.
+    powerUps = [];
+    sobrecargaHasta = 0;
+    distorsionTemporalHasta = 0;
+    resonanciaXPHasta = 0;
+
+    obstaculos = [];
+
     puntos = 0;
     hexaCores = 0;
 
@@ -2541,6 +3358,9 @@ avisoTienda.classList.add("oculto");
     estadoGuardarPuntaje.textContent = "";
     btnGuardarPuntaje.disabled = false;
 
+    // La primera oleada también recibe un escenario aleatorio.
+    generarObstaculosOleada();
+
     juegoActivo = true;
 requestAnimationFrame(gameLoop);
     }
@@ -2576,6 +3396,36 @@ document.addEventListener("keydown", function (evento) {
 
 
     teclas[tecla] = true;
+
+
+    // ===============================
+    // PULSO HEXA - Q
+    // ===============================
+    if (
+        tecla === "q"
+        &&
+        juegoActivo
+        &&
+        !juegoPausado
+        &&
+        !tiendaActiva
+        &&
+        !nivelOverlayActivo
+        &&
+        jugador
+        &&
+        !jugador.muriendo
+        &&
+        !evento.repeat
+    ) {
+
+        evento.preventDefault();
+
+        activarPulsoHexa();
+
+        return;
+    }
+
 
 // ===============================
 // CAMBIAR ARMA
@@ -3147,10 +3997,20 @@ function crearExplosionEnergia(x, y) {
             distancia
             <=
             radioExplosion + enemigo.radio
+            &&
+            !hayObstaculoEntre(
+                x,
+                y,
+                enemigo.x,
+                enemigo.y,
+                5
+            )
         ) {
 
             enemigo.vida -=
-                dañoExplosion;
+                dañoExplosion
+                *
+                obtenerMultiplicadorDañoPowerUp();
 
 
             // La explosión utiliza exactamente las mismas recompensas
@@ -3199,6 +4059,10 @@ function crearExplosionEnergia(x, y) {
                     enemigo.y
                 );
 
+                intentarSoltarPowerUp(
+                    enemigo
+                );
+
                 reproducirSonido("enemigoMuerte");
 
             }
@@ -3207,6 +4071,1411 @@ function crearExplosionEnergia(x, y) {
 
     });
 
+}
+
+
+// ===========================================================
+// PULSO HEXA - HABILIDAD ESPECIAL DE ADO
+// ===========================================================
+
+function activarPulsoHexa() {
+
+    const ahoraJuego =
+        tiempoJugadoMs;
+
+    const tiempoDesdeUltimoUso =
+        ahoraJuego
+        -
+        ultimoUsoPulsoHexa;
+
+
+    // Todavía está en cooldown.
+    if (
+        tiempoDesdeUltimoUso
+        <
+        cooldownPulsoHexa
+    ) {
+        return;
+    }
+
+
+    ultimoUsoPulsoHexa =
+        ahoraJuego;
+
+
+    // Guardamos la posición donde se activó.
+    // Así la onda no "persigue" a Ado si ella se mueve.
+    pulsoHexaVisual = {
+
+        x: jugador.x,
+        y: jugador.y,
+
+        inicio:
+            ahoraJuego,
+
+        duracion: 720
+    };
+
+
+    reproducirSonido(
+        "explosionEnergia"
+    );
+
+
+    // Estallido central.
+    crearParticulas(
+        jugador.x,
+        jugador.y,
+        "#55e8ff",
+        34,
+        7,
+        5,
+        0.03
+    );
+
+
+    enemigos.forEach(
+        function (enemigo) {
+
+            // No afecta enemigos muertos ni al HiveLord
+            // mientras sea invulnerable bajo tierra/emergiendo.
+            if (
+                enemigo.muriendo
+                ||
+                enemigo.invulnerable
+            ) {
+                return;
+            }
+
+
+            const diferenciaX =
+                enemigo.x
+                -
+                jugador.x;
+
+            const diferenciaY =
+                enemigo.y
+                -
+                jugador.y;
+
+            const distancia =
+                Math.hypot(
+                    diferenciaX,
+                    diferenciaY
+                );
+
+
+            if (
+                distancia
+                >
+                radioPulsoHexa
+                +
+                enemigo.radio
+            ) {
+                return;
+            }
+
+
+            // Un obstáculo entre Ado y el enemigo bloquea
+            // completamente el Pulso Hexa.
+            if (
+                hayObstaculoEntre(
+                    jugador.x,
+                    jugador.y,
+                    enemigo.x,
+                    enemigo.y,
+                    5
+                )
+            ) {
+                return;
+            }
+
+
+            // ===============================
+            // DAÑO
+            // ===============================
+
+            enemigo.vida -=
+                dañoPulsoHexa
+                *
+                obtenerMultiplicadorDañoPowerUp();
+
+
+            crearParticulasImpacto(
+                enemigo.x,
+                enemigo.y,
+                "energia"
+            );
+
+
+            // ===============================
+            // MUERTE Y RECOMPENSAS
+            // ===============================
+            // Conserva exactamente la misma lógica de recompensas
+            // que las muertes provocadas por los proyectiles.
+
+            if (
+                enemigo.vida <= 0
+                &&
+                !enemigo.muriendo
+            ) {
+
+                enemigo.muriendo =
+                    true;
+
+                enemigo.muerteInicio =
+                    performance.now();
+
+                enemigo.muerteHasta =
+                    enemigo.muerteInicio
+                    +
+                    700;
+
+                enemigo.direccionMuerte =
+                    jugador.x > enemigo.x
+                        ? "right"
+                        : "left";
+
+
+                enemigosEliminadosOleada++;
+
+
+                hudEnemigos.textContent =
+                    enemigosPorOleada
+                    -
+                    enemigosEliminadosOleada;
+
+
+                registrarEliminacionParaPuntos();
+
+
+                hexaCores += 1;
+
+                hudHexa.textContent =
+                    hexaCores;
+
+
+                agregarExperiencia(10);
+
+
+                crearParticulasMuerteEnemigo(
+                    enemigo.x,
+                    enemigo.y
+                );
+
+                intentarSoltarPowerUp(
+                    enemigo
+                );
+
+
+                reproducirSonido(
+                    "enemigoMuerte"
+                );
+
+
+                return;
+            }
+
+
+            // ===============================
+            // ANIMACIÓN DE HIT
+            // ===============================
+            // Ranger y Tank ya tienen estados de HIT.
+            // Agregar estas propiedades al resto es inofensivo.
+            const ahoraReal =
+                performance.now();
+
+            enemigo.hitInicio =
+                ahoraReal;
+
+            enemigo.hitHasta =
+                ahoraReal + 300;
+
+
+            // ===============================
+            // EMPUJE
+            // ===============================
+            // Los jefes no son desplazados para no interferir
+            // con sus estados/ataques. El Tank pesa más.
+
+            if (
+                enemigo.esJefe
+            ) {
+                return;
+            }
+
+
+            const empuje =
+                enemigo.tipo === "tank"
+                    ? 32
+                    : 55;
+
+
+            let direccionX = 1;
+            let direccionY = 0;
+
+
+            if (
+                distancia > 0.001
+            ) {
+
+                direccionX =
+                    diferenciaX
+                    /
+                    distancia;
+
+                direccionY =
+                    diferenciaY
+                    /
+                    distancia;
+            }
+
+
+            enemigo.x +=
+                direccionX
+                *
+                empuje;
+
+            enemigo.y +=
+                direccionY
+                *
+                empuje;
+
+
+            // Mantener al enemigo dentro del escenario.
+            enemigo.x =
+                Math.max(
+                    enemigo.radio,
+                    Math.min(
+                        canvas.width
+                        -
+                        enemigo.radio,
+                        enemigo.x
+                    )
+                );
+
+            enemigo.y =
+                Math.max(
+                    enemigo.radio,
+                    Math.min(
+                        canvas.height
+                        -
+                        enemigo.radio,
+                        enemigo.y
+                    )
+                );
+
+        }
+    );
+}
+
+
+// ===========================================================
+// DIBUJAR PULSO HEXA
+// ===========================================================
+// El PNG generado contiene 8 cuadros en una cuadrícula 4 x 2.
+// La imagen original puede medir 1774 x 887; drawImage acepta
+// coordenadas de origen fraccionarias, así que no hace falta
+// redimensionar físicamente el archivo.
+// ===========================================================
+
+function dibujarPulsoHexa() {
+
+    if (!pulsoHexaVisual) {
+        return;
+    }
+
+
+    const tiempoTranscurrido =
+        tiempoJugadoMs
+        -
+        pulsoHexaVisual.inicio;
+
+
+    if (
+        tiempoTranscurrido
+        >=
+        pulsoHexaVisual.duracion
+    ) {
+
+        pulsoHexaVisual = null;
+
+        return;
+    }
+
+
+    const cantidadColumnas = 4;
+    const cantidadFilas = 2;
+    const cantidadFrames = 8;
+
+
+    const progreso =
+        Math.max(
+            0,
+            Math.min(
+                0.9999,
+                tiempoTranscurrido
+                /
+                pulsoHexaVisual.duracion
+            )
+        );
+
+
+    const frameActual =
+        Math.min(
+            cantidadFrames - 1,
+            Math.floor(
+                progreso
+                *
+                cantidadFrames
+            )
+        );
+
+
+    // Si el PNG todavía no cargó, dejamos una onda simple
+    // para que la habilidad nunca quede invisible.
+    if (
+        !spritePulsoHexa.complete
+        ||
+        spritePulsoHexa.naturalWidth === 0
+        ||
+        spritePulsoHexa.naturalHeight === 0
+    ) {
+
+        ctx.save();
+
+        ctx.beginPath();
+
+        ctx.arc(
+            pulsoHexaVisual.x,
+            pulsoHexaVisual.y,
+            radioPulsoHexa * progreso,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.strokeStyle =
+            "rgba(85, 232, 255, 0.85)";
+
+        ctx.lineWidth = 7;
+
+        ctx.shadowColor =
+            "#55e8ff";
+
+        ctx.shadowBlur = 20;
+
+        ctx.stroke();
+
+        ctx.restore();
+
+        return;
+    }
+
+
+    const anchoFrame =
+        spritePulsoHexa.naturalWidth
+        /
+        cantidadColumnas;
+
+    const altoFrame =
+        spritePulsoHexa.naturalHeight
+        /
+        cantidadFilas;
+
+
+    const columna =
+        frameActual
+        %
+        cantidadColumnas;
+
+    const fila =
+        Math.floor(
+            frameActual
+            /
+            cantidadColumnas
+        );
+
+
+    // Algo más grande que el radio real para que el resplandor
+    // visual sobresalga de la zona de daño.
+    const tamañoDibujo = 380;
+
+
+    ctx.save();
+
+    ctx.globalCompositeOperation =
+        "screen";
+
+    ctx.drawImage(
+        spritePulsoHexa,
+
+        columna * anchoFrame,
+        fila * altoFrame,
+        anchoFrame,
+        altoFrame,
+
+        pulsoHexaVisual.x
+        -
+        tamañoDibujo / 2,
+
+        pulsoHexaVisual.y
+        -
+        tamañoDibujo / 2,
+
+        tamañoDibujo,
+        tamañoDibujo
+    );
+
+    ctx.restore();
+}
+
+
+// ===========================================================
+// HUD DEL PULSO HEXA
+// ===========================================================
+
+function dibujarEstadoPulsoHexa() {
+
+    if (
+        !juegoActivo
+        ||
+        !jugador
+    ) {
+        return;
+    }
+
+
+    const restante =
+        Math.max(
+            0,
+            cooldownPulsoHexa
+            -
+            (
+                tiempoJugadoMs
+                -
+                ultimoUsoPulsoHexa
+            )
+        );
+
+
+    const listo =
+        restante <= 0;
+
+
+    const texto =
+        listo
+            ? "Q · PULSO HEXA: LISTO"
+            : (
+                "Q · PULSO HEXA: "
+                +
+                (restante / 1000)
+                    .toFixed(1)
+                +
+                "s"
+            );
+
+
+    ctx.save();
+
+    ctx.font =
+        "bold 16px Arial";
+
+    ctx.textAlign =
+        "right";
+
+    ctx.textBaseline =
+        "middle";
+
+
+    const ancho =
+        ctx.measureText(texto).width
+        +
+        24;
+
+    const x =
+        canvas.width - 20;
+
+    const y =
+        canvas.height - 34;
+
+
+    ctx.fillStyle =
+        "rgba(5, 12, 24, 0.72)";
+
+    ctx.fillRect(
+        x - ancho,
+        y - 18,
+        ancho,
+        36
+    );
+
+
+    ctx.strokeStyle =
+        listo
+            ? "rgba(85, 232, 255, 0.80)"
+            : "rgba(180, 190, 205, 0.45)";
+
+    ctx.lineWidth = 1;
+
+    ctx.strokeRect(
+        x - ancho,
+        y - 18,
+        ancho,
+        36
+    );
+
+
+    ctx.fillStyle =
+        listo
+            ? "#7cf3ff"
+            : "#c3cad6";
+
+    ctx.fillText(
+        texto,
+        x - 12,
+        y
+    );
+
+    ctx.restore();
+}
+
+
+// ===========================================================
+// SISTEMA DE OBSTÁCULOS
+// ===========================================================
+
+function obtenerRectanguloObstaculo(
+    obstaculo
+) {
+
+    return {
+
+        izquierda:
+            obstaculo.x
+            -
+            obstaculo.anchoColision / 2,
+
+        derecha:
+            obstaculo.x
+            +
+            obstaculo.anchoColision / 2,
+
+        arriba:
+            obstaculo.y
+            -
+            obstaculo.altoColision / 2,
+
+        abajo:
+            obstaculo.y
+            +
+            obstaculo.altoColision / 2
+    };
+}
+
+
+// ===========================================================
+// CÍRCULO VS RECTÁNGULO
+// ===========================================================
+
+function circuloColisionaObstaculo(
+    x,
+    y,
+    radio,
+    obstaculo
+) {
+
+    const rect =
+        obtenerRectanguloObstaculo(
+            obstaculo
+        );
+
+
+    const puntoX =
+        Math.max(
+            rect.izquierda,
+            Math.min(
+                x,
+                rect.derecha
+            )
+        );
+
+    const puntoY =
+        Math.max(
+            rect.arriba,
+            Math.min(
+                y,
+                rect.abajo
+            )
+        );
+
+
+    const diferenciaX =
+        x - puntoX;
+
+    const diferenciaY =
+        y - puntoY;
+
+
+    return (
+        diferenciaX
+        *
+        diferenciaX
+        +
+        diferenciaY
+        *
+        diferenciaY
+        <
+        radio
+        *
+        radio
+    );
+}
+
+
+// ===========================================================
+// RESOLVER CÍRCULO VS RECTÁNGULO
+// ===========================================================
+// Se usa tanto para Ado como para enemigos normales/Tank.
+// Empuja la entidad justo fuera de la hitbox del obstáculo.
+// ===========================================================
+
+// ===========================================================
+// LÍNEA DE VISIÓN CONTRA OBSTÁCULOS
+// ===========================================================
+// Devuelve true cuando el segmento entre dos puntos cruza la
+// hitbox rectangular de algún obstáculo.
+//
+// Esto permite que una pared funcione como cobertura real:
+// una habilidad de área no puede dañar algo que está al otro
+// lado del obstáculo aunque esté dentro del radio.
+// ===========================================================
+
+function segmentoCruzaObstaculo(
+    x1,
+    y1,
+    x2,
+    y2,
+    obstaculo,
+    margen = 0
+) {
+
+    const rectBase =
+        obtenerRectanguloObstaculo(
+            obstaculo
+        );
+
+
+    const izquierda =
+        rectBase.izquierda
+        -
+        margen;
+
+    const derecha =
+        rectBase.derecha
+        +
+        margen;
+
+    const arriba =
+        rectBase.arriba
+        -
+        margen;
+
+    const abajo =
+        rectBase.abajo
+        +
+        margen;
+
+
+    const dx =
+        x2 - x1;
+
+    const dy =
+        y2 - y1;
+
+
+    let tMin = 0;
+    let tMax = 1;
+
+
+    // ===============================
+    // EJE X
+    // ===============================
+
+    if (
+        Math.abs(dx) < 0.000001
+    ) {
+
+        if (
+            x1 < izquierda
+            ||
+            x1 > derecha
+        ) {
+            return false;
+        }
+
+    } else {
+
+        let t1 =
+            (izquierda - x1)
+            /
+            dx;
+
+        let t2 =
+            (derecha - x1)
+            /
+            dx;
+
+
+        if (t1 > t2) {
+
+            const temporal =
+                t1;
+
+            t1 = t2;
+            t2 = temporal;
+        }
+
+
+        tMin =
+            Math.max(
+                tMin,
+                t1
+            );
+
+        tMax =
+            Math.min(
+                tMax,
+                t2
+            );
+
+
+        if (
+            tMin > tMax
+        ) {
+            return false;
+        }
+    }
+
+
+    // ===============================
+    // EJE Y
+    // ===============================
+
+    if (
+        Math.abs(dy) < 0.000001
+    ) {
+
+        if (
+            y1 < arriba
+            ||
+            y1 > abajo
+        ) {
+            return false;
+        }
+
+    } else {
+
+        let t1 =
+            (arriba - y1)
+            /
+            dy;
+
+        let t2 =
+            (abajo - y1)
+            /
+            dy;
+
+
+        if (t1 > t2) {
+
+            const temporal =
+                t1;
+
+            t1 = t2;
+            t2 = temporal;
+        }
+
+
+        tMin =
+            Math.max(
+                tMin,
+                t1
+            );
+
+        tMax =
+            Math.min(
+                tMax,
+                t2
+            );
+
+
+        if (
+            tMin > tMax
+        ) {
+            return false;
+        }
+    }
+
+
+    return (
+        tMax >= 0
+        &&
+        tMin <= 1
+    );
+}
+
+
+function hayObstaculoEntre(
+    x1,
+    y1,
+    x2,
+    y2,
+    margen = 4
+) {
+
+    return obstaculos.some(
+        function (obstaculo) {
+
+            return segmentoCruzaObstaculo(
+                x1,
+                y1,
+                x2,
+                y2,
+                obstaculo,
+                margen
+            );
+        }
+    );
+}
+
+
+function resolverCirculoContraObstaculo(
+    entidad,
+    obstaculo
+) {
+
+    const rect =
+        obtenerRectanguloObstaculo(
+            obstaculo
+        );
+
+
+    const puntoX =
+        Math.max(
+            rect.izquierda,
+            Math.min(
+                entidad.x,
+                rect.derecha
+            )
+        );
+
+    const puntoY =
+        Math.max(
+            rect.arriba,
+            Math.min(
+                entidad.y,
+                rect.abajo
+            )
+        );
+
+
+    let diferenciaX =
+        entidad.x - puntoX;
+
+    let diferenciaY =
+        entidad.y - puntoY;
+
+
+    const distanciaCuadrada =
+        diferenciaX
+        *
+        diferenciaX
+        +
+        diferenciaY
+        *
+        diferenciaY;
+
+
+    if (
+        distanciaCuadrada
+        >=
+        entidad.radio
+        *
+        entidad.radio
+    ) {
+        return false;
+    }
+
+
+    // Caso normal: el centro está fuera del rectángulo,
+    // pero el borde del círculo lo está tocando.
+    if (
+        distanciaCuadrada > 0.0001
+    ) {
+
+        const distancia =
+            Math.sqrt(
+                distanciaCuadrada
+            );
+
+        const empuje =
+            entidad.radio
+            -
+            distancia;
+
+
+        entidad.x +=
+            diferenciaX
+            /
+            distancia
+            *
+            empuje;
+
+        entidad.y +=
+            diferenciaY
+            /
+            distancia
+            *
+            empuje;
+
+
+        return true;
+    }
+
+
+    // Caso especial:
+    // el centro del círculo quedó dentro del rectángulo.
+    // Lo sacamos por el lado más cercano.
+    const distanciaIzquierda =
+        entidad.x
+        -
+        rect.izquierda;
+
+    const distanciaDerecha =
+        rect.derecha
+        -
+        entidad.x;
+
+    const distanciaArriba =
+        entidad.y
+        -
+        rect.arriba;
+
+    const distanciaAbajo =
+        rect.abajo
+        -
+        entidad.y;
+
+
+    const menor =
+        Math.min(
+            distanciaIzquierda,
+            distanciaDerecha,
+            distanciaArriba,
+            distanciaAbajo
+        );
+
+
+    if (
+        menor ===
+        distanciaIzquierda
+    ) {
+
+        entidad.x =
+            rect.izquierda
+            -
+            entidad.radio;
+
+    } else if (
+        menor ===
+        distanciaDerecha
+    ) {
+
+        entidad.x =
+            rect.derecha
+            +
+            entidad.radio;
+
+    } else if (
+        menor ===
+        distanciaArriba
+    ) {
+
+        entidad.y =
+            rect.arriba
+            -
+            entidad.radio;
+
+    } else {
+
+        entidad.y =
+            rect.abajo
+            +
+            entidad.radio;
+    }
+
+
+    return true;
+}
+
+
+function resolverEntidadContraObstaculos(
+    entidad
+) {
+
+    obstaculos.forEach(
+        function (obstaculo) {
+
+            resolverCirculoContraObstaculo(
+                entidad,
+                obstaculo
+            );
+        }
+    );
+}
+
+
+// ===========================================================
+// COMPROBAR POSICIÓN PARA GENERAR OBSTÁCULO
+// ===========================================================
+
+function obstaculoPuedeAparecer(
+    candidato
+) {
+
+    // Zona segura alrededor de Ado.
+    const distanciaJugador =
+        Math.hypot(
+            candidato.x - jugador.x,
+            candidato.y - jugador.y
+        );
+
+
+    if (
+        distanciaJugador
+        <
+        185
+    ) {
+        return false;
+    }
+
+
+    // En oleadas de jefe dejamos libre la zona donde aparece
+    // el HiveLord para no tapar su entrada.
+    if (
+        oleada % 5 === 0
+    ) {
+
+        const jefeX =
+            canvas.width * 0.72;
+
+        const jefeY =
+            canvas.height * 0.55;
+
+
+        const distanciaJefe =
+            Math.hypot(
+                candidato.x - jefeX,
+                candidato.y - jefeY
+            );
+
+
+        if (
+            distanciaJefe < 230
+        ) {
+            return false;
+        }
+    }
+
+
+    // No colocar un obstáculo encima de otro.
+    for (
+        let i = 0;
+        i < obstaculos.length;
+        i++
+    ) {
+
+        const otro =
+            obstaculos[i];
+
+        const separacionX =
+            candidato.anchoColision / 2
+            +
+            otro.anchoColision / 2
+            +
+            46;
+
+        const separacionY =
+            candidato.altoColision / 2
+            +
+            otro.altoColision / 2
+            +
+            46;
+
+
+        if (
+            Math.abs(
+                candidato.x - otro.x
+            )
+            <
+            separacionX
+            &&
+            Math.abs(
+                candidato.y - otro.y
+            )
+            <
+            separacionY
+        ) {
+            return false;
+        }
+    }
+
+
+    // Si quedó algún power-up de la oleada anterior,
+    // tampoco lo encerramos dentro de un obstáculo.
+    for (
+        let i = 0;
+        i < powerUps.length;
+        i++
+    ) {
+
+        const powerUp =
+            powerUps[i];
+
+
+        if (
+            circuloColisionaObstaculo(
+                powerUp.x,
+                powerUp.y,
+                powerUp.radio + 24,
+                candidato
+            )
+        ) {
+            return false;
+        }
+    }
+
+
+    return true;
+}
+
+
+// ===========================================================
+// GENERAR OBSTÁCULOS DE LA OLEADA
+// ===========================================================
+// Se intenta colocar uno de cada tipo.
+// Si una posición no es segura, se vuelve a intentar hasta
+// encontrar otra. De esta forma cada oleada cambia el escenario.
+// ===========================================================
+
+function generarObstaculosOleada() {
+
+    obstaculos = [];
+
+
+    const margenExterior = 82;
+
+
+    tiposObstaculos.forEach(
+        function (configuracion) {
+
+            let colocado =
+                false;
+
+
+            for (
+                let intento = 0;
+                intento < 90;
+                intento++
+            ) {
+
+                // Todos los obstáculos aparecen horizontales.
+                // Conservamos los tamaños reducidos que ajustamos.
+                const vertical =
+                    false;
+
+
+                const rotacion =
+                    0;
+
+
+                const anchoCajaVisual =
+                    configuracion.anchoVisual;
+
+                const altoCajaVisual =
+                    configuracion.altoVisual;
+
+
+                const anchoColision =
+                    configuracion.anchoColision;
+
+                const altoColision =
+                    configuracion.altoColision;
+
+
+                const margenX =
+                    margenExterior
+                    +
+                    anchoCajaVisual / 2;
+
+                const margenY =
+                    margenExterior
+                    +
+                    altoCajaVisual / 2;
+
+
+                const candidato = {
+
+                    tipo:
+                        configuracion.tipo,
+
+                    imagen:
+                        configuracion.imagen,
+
+                    // Dimensiones con las que realmente se dibuja
+                    // el PNG antes de aplicarle la rotación.
+                    anchoVisual:
+                        configuracion.anchoVisual,
+
+                    altoVisual:
+                        configuracion.altoVisual,
+
+                    anchoColision:
+                        anchoColision,
+
+                    altoColision:
+                        altoColision,
+
+                    rotacion:
+                        rotacion,
+
+                    vertical:
+                        vertical,
+
+                    x:
+                        margenX
+                        +
+                        Math.random()
+                        *
+                        (
+                            canvas.width
+                            -
+                            margenX * 2
+                        ),
+
+                    y:
+                        margenY
+                        +
+                        Math.random()
+                        *
+                        (
+                            canvas.height
+                            -
+                            margenY * 2
+                        )
+                };
+
+
+                if (
+                    obstaculoPuedeAparecer(
+                        candidato
+                    )
+                ) {
+
+                    obstaculos.push(
+                        candidato
+                    );
+
+                    colocado =
+                        true;
+
+                    break;
+                }
+            }
+
+
+            // Si un objeto concreto no encontró una posición segura
+            // después de muchos intentos, simplemente omitimos ese
+            // objeto en esa oleada antes que crear un mapa imposible.
+            if (!colocado) {
+                return;
+            }
+
+        }
+    );
+}
+
+
+// ===========================================================
+// DIBUJAR OBSTÁCULOS
+// ===========================================================
+
+function dibujarObstaculos() {
+
+    obstaculos.forEach(
+        function (obstaculo) {
+
+            const imagen =
+                obstaculo.imagen;
+
+
+            if (
+                imagen.complete
+                &&
+                imagen.naturalWidth > 0
+                &&
+                imagen.naturalHeight > 0
+            ) {
+
+                ctx.save();
+
+                ctx.translate(
+                    obstaculo.x,
+                    obstaculo.y
+                );
+
+                ctx.rotate(
+                    obstaculo.rotacion || 0
+                );
+
+                ctx.drawImage(
+                    imagen,
+
+                    -obstaculo.anchoVisual / 2,
+                    -obstaculo.altoVisual / 2,
+
+                    obstaculo.anchoVisual,
+                    obstaculo.altoVisual
+                );
+
+                ctx.restore();
+
+            } else {
+
+                // Respaldo temporal por si una imagen falta.
+                ctx.save();
+
+                ctx.fillStyle =
+                    "rgba(90, 75, 72, 0.82)";
+
+                ctx.fillRect(
+                    obstaculo.x
+                    -
+                    obstaculo.anchoColision / 2,
+
+                    obstaculo.y
+                    -
+                    obstaculo.altoColision / 2,
+
+                    obstaculo.anchoColision,
+                    obstaculo.altoColision
+                );
+
+                ctx.restore();
+            }
+
+        }
+    );
 }
 
 
@@ -3296,14 +5565,15 @@ function moverJugador() {
     }
 
 
+    // ===============================
+    // MOVER EN X
+    // ===============================
+    // Se resuelve por ejes para que Ado pueda deslizarse
+    // naturalmente por los bordes de los obstáculos.
+
     jugador.x +=
         x * jugador.velocidad;
 
-    jugador.y +=
-        y * jugador.velocidad;
-
-
-    // Evitar salir del Canvas
 
     jugador.x =
         Math.max(
@@ -3314,6 +5584,45 @@ function moverJugador() {
             )
         );
 
+
+    resolverEntidadContraObstaculos(
+        jugador
+    );
+
+
+    // ===============================
+    // MOVER EN Y
+    // ===============================
+
+    jugador.y +=
+        y * jugador.velocidad;
+
+
+    jugador.y =
+        Math.max(
+            jugador.radio,
+            Math.min(
+                canvas.height - jugador.radio,
+                jugador.y
+            )
+        );
+
+
+    resolverEntidadContraObstaculos(
+        jugador
+    );
+
+
+    // Seguridad final por si la resolución de una esquina
+    // empujó ligeramente a Ado fuera del Canvas.
+    jugador.x =
+        Math.max(
+            jugador.radio,
+            Math.min(
+                canvas.width - jugador.radio,
+                jugador.x
+            )
+        );
 
     jugador.y =
         Math.max(
@@ -4142,20 +6451,40 @@ if (
 
             const movimiento =
                 Math.min(
-                    enemigo.velocidad,
+                    enemigo.velocidad
+                    *
+                    obtenerFactorVelocidadEnemigosPowerUp(),
                     distancia - distanciaMinima
                 );
 
 
-            enemigo.x +=
+            const pasoX =
                 Math.cos(angulo)
                 *
                 movimiento;
 
-            enemigo.y +=
+            const pasoY =
                 Math.sin(angulo)
                 *
                 movimiento;
+
+
+            // Movimiento por ejes para que el enemigo no atraviese
+            // las barricadas y pueda deslizarse por sus bordes.
+            enemigo.x +=
+                pasoX;
+
+            resolverEntidadContraObstaculos(
+                enemigo
+            );
+
+
+            enemigo.y +=
+                pasoY;
+
+            resolverEntidadContraObstaculos(
+                enemigo
+            );
         }
 
     });
@@ -4335,6 +6664,14 @@ function crearExplosionHiveLord(x, y) {
     if (
         distancia <=
         radioExplosion + jugador.radio
+        &&
+        !hayObstaculoEntre(
+            x,
+            y,
+            jugador.x,
+            jugador.y,
+            5
+        )
     ) {
 
         jugador.vida -=
@@ -4435,6 +6772,14 @@ function aplicarSlamHiveLord(enemigo) {
     if (
         distancia <=
         radioSlam + jugador.radio
+        &&
+        !hayObstaculoEntre(
+            enemigo.x,
+            enemigo.y,
+            jugador.x,
+            jugador.y,
+            5
+        )
     ) {
 
         jugador.vida -=
@@ -4620,6 +6965,41 @@ function moverProyectiles() {
             distanciaPaso;
 
 
+        // ===============================
+        // PROYECTIL VS OBSTÁCULO
+        // ===============================
+
+        const golpeObstaculo =
+            obstaculos.some(
+                function (obstaculo) {
+
+                    return circuloColisionaObstaculo(
+                        proyectil.x,
+                        proyectil.y,
+                        proyectil.radio,
+                        obstaculo
+                    );
+                }
+            );
+
+
+        if (golpeObstaculo) {
+
+            crearParticulasImpacto(
+                proyectil.x,
+                proyectil.y,
+                proyectil.tipo
+            );
+
+            proyectiles.splice(
+                i,
+                1
+            );
+
+            continue;
+        }
+
+
         // Eliminar si sale del canvas
         const fueraDelCanvas =
             proyectil.x < 0 ||
@@ -4660,11 +7040,74 @@ function moverProyectilesEnemigos() {
         const proyectil =
             proyectilesEnemigos[i];
 
+
+        const posicionAnteriorX =
+            proyectil.x;
+
+        const posicionAnteriorY =
+            proyectil.y;
+
+
         proyectil.x +=
             proyectil.velocidadX;
 
         proyectil.y +=
             proyectil.velocidadY;
+
+
+        // ===============================
+        // PROYECTIL ENEMIGO VS OBSTÁCULO
+        // ===============================
+
+        const golpeObstaculo =
+            obstaculos.some(
+                function (obstaculo) {
+
+                    return circuloColisionaObstaculo(
+                        proyectil.x,
+                        proyectil.y,
+                        proyectil.radio,
+                        obstaculo
+                    );
+                }
+            );
+
+
+        if (golpeObstaculo) {
+
+            // El proyectil explosivo del HiveLord detona
+            // al impactar contra el entorno.
+            if (
+                proyectil.tipo === "hivelord"
+            ) {
+
+                crearExplosionHiveLord(
+                    posicionAnteriorX,
+                    posicionAnteriorY
+                );
+
+            } else {
+
+                crearParticulas(
+                    proyectil.x,
+                    proyectil.y,
+                    "#9dff42",
+                    10,
+                    4,
+                    3,
+                    0.05
+                );
+            }
+
+
+            proyectilesEnemigos.splice(
+                i,
+                1
+            );
+
+            continue;
+        }
+
 
         const fueraDelCanvas =
             proyectil.x < -30 ||
@@ -4684,7 +7127,7 @@ function moverProyectilesEnemigos() {
 
 
 // ===============================
-// DIBUJAR ÁCIDO DEL RANGER
+// DIBUJAR PROYECTILES ENEMIGOS
 // ===============================
 
 function dibujarProyectilesEnemigos() {
@@ -4692,6 +7135,24 @@ function dibujarProyectilesEnemigos() {
     proyectilesEnemigos.forEach(
         function (proyectil) {
 
+            // El Ranger usa su spritesheet nuevo.
+            // El Hivelord conserva por ahora su dibujo original,
+            // para no modificar el sistema nuevo del jefe.
+            if (
+                proyectil.tipo === "acido"
+                &&
+                dibujarSpriteProyectil(
+                    proyectil,
+                    datosSpritesProyectiles.acido
+                )
+            ) {
+                return;
+            }
+
+
+            // FALLBACK / HIVELORD
+            // Si la imagen del Ranger no cargara, también se verá
+            // este círculo en lugar de dejar invisible el disparo.
             ctx.save();
 
             ctx.beginPath();
@@ -4808,7 +7269,9 @@ if (enemigo.invulnerable) {
             // ===============================
 
             enemigo.vida -=
-                proyectil.daño;
+                proyectil.daño
+                *
+                obtenerMultiplicadorDañoPowerUp();
 
                 // ===============================
                 // HIT DEL TANK
@@ -4951,6 +7414,10 @@ if (
                 crearParticulasMuerteEnemigo(
                     enemigo.x,
                     enemigo.y
+                );
+
+                intentarSoltarPowerUp(
+                    enemigo
                 );
 
                 reproducirSonido("enemigoMuerte");
@@ -5441,8 +7908,117 @@ function dibujarJugadorTemporal() {
     );
 }
 
+// ===========================================================
+// DIBUJAR UN SPRITE DE PROYECTIL
+// ===========================================================
+// Devuelve true si pudo dibujar la imagen.
+// Si todavía no cargó el PNG, devuelve false para usar el
+// círculo anterior como respaldo.
+//
+// Cada PNG se interpreta como un spritesheet horizontal de
+// cuatro frames. No depende de que el archivo mida exactamente
+// 96x24, 64x16, etc.; usa naturalWidth / 4 automáticamente.
+// ===========================================================
+
+function dibujarSpriteProyectil(
+    proyectil,
+    configuracion
+) {
+
+    if (
+        !configuracion
+        ||
+        !configuracion.imagen
+        ||
+        !configuracion.imagen.complete
+        ||
+        configuracion.imagen.naturalWidth === 0
+        ||
+        configuracion.imagen.naturalHeight === 0
+    ) {
+        return false;
+    }
+
+
+    const imagen =
+        configuracion.imagen;
+
+    const cantidadFrames = 4;
+
+    const anchoFrame =
+        imagen.naturalWidth
+        /
+        cantidadFrames;
+
+    const altoFrame =
+        imagen.naturalHeight;
+
+
+    // Todos los proyectiles pueden compartir la animación.
+    // Un frame cambia aproximadamente cada 85 ms.
+    const frameActual =
+        Math.floor(
+            performance.now() / 85
+        )
+        %
+        cantidadFrames;
+
+
+    // El tamaño visual respeta cambios de radio.
+    // Esto permite que la mejora del arma de energía siga
+    // viéndose más grande cuando aumenta su radio.
+    const escalaPorRadio =
+        proyectil.radio
+        /
+        configuracion.radioBase;
+
+    const tamaño =
+        configuracion.tamaño
+        *
+        escalaPorRadio;
+
+
+    const angulo =
+        Math.atan2(
+            proyectil.velocidadY,
+            proyectil.velocidadX
+        );
+
+
+    ctx.save();
+
+    ctx.translate(
+        proyectil.x,
+        proyectil.y
+    );
+
+    ctx.rotate(
+        angulo
+    );
+
+    ctx.drawImage(
+        imagen,
+
+        frameActual * anchoFrame,
+        0,
+        anchoFrame,
+        altoFrame,
+
+        -tamaño / 2,
+        -tamaño / 2,
+        tamaño,
+        tamaño
+    );
+
+    ctx.restore();
+
+
+    return true;
+}
+
+
 // ===============================
-// DIBUJAR PROYECTILES
+// DIBUJAR PROYECTILES DE ADO
 // ===============================
 
 function dibujarProyectiles() {
@@ -5450,6 +8026,28 @@ function dibujarProyectiles() {
     proyectiles.forEach(
         function (proyectil) {
 
+            const configuracion =
+                datosSpritesProyectiles[
+                    proyectil.tipo
+                ];
+
+
+            // Primero intentamos utilizar el sprite nuevo.
+            if (
+                dibujarSpriteProyectil(
+                    proyectil,
+                    configuracion
+                )
+            ) {
+                return;
+            }
+
+
+            // ===============================
+            // FALLBACK
+            // ===============================
+            // Si falta un PNG o todavía no terminó de cargar,
+            // conservamos los círculos anteriores.
             ctx.beginPath();
 
             ctx.arc(
@@ -5460,10 +8058,6 @@ function dibujarProyectiles() {
                 Math.PI * 2
             );
 
-
-            // ===============================
-            // COLOR SEGÚN EL ARMA
-            // ===============================
 
             if (
                 proyectil.tipo === "energia"
@@ -7717,6 +10311,9 @@ function avanzarOleada(tiempoActual) {
 
     oleada++;
 
+    // Cada oleada reorganiza los cuatro obstáculos.
+    generarObstaculosOleada();
+
     enemigosGenerados = 0;
     enemigosEliminadosOleada = 0;
 
@@ -7860,6 +10457,28 @@ function dibujarCirculoDebug(
 }
 
 
+function dibujarRectanguloDebug(
+    x,
+    y,
+    ancho,
+    alto,
+    color
+) {
+
+    ctx.strokeStyle =
+        color;
+
+    ctx.lineWidth = 2;
+
+    ctx.strokeRect(
+        x - ancho / 2,
+        y - alto / 2,
+        ancho,
+        alto
+    );
+}
+
+
 function dibujarHitboxesDebug() {
 
     if (!debugActivo) {
@@ -7891,6 +10510,22 @@ function dibujarHitboxesDebug() {
                 enemigo.y,
                 enemigo.radio,
                 "#ff4d4d"
+            );
+
+        }
+    );
+
+
+    // OBSTÁCULOS
+    obstaculos.forEach(
+        function (obstaculo) {
+
+            dibujarRectanguloDebug(
+                obstaculo.x,
+                obstaculo.y,
+                obstaculo.anchoColision,
+                obstaculo.altoColision,
+                "#ff9f43"
             );
 
         }
@@ -7949,7 +10584,9 @@ function dibujarPanelDebug() {
         + proyectiles.length
         + proyectilesEnemigos.length
         + particulas.length
-        + explosionesEnergia.length;
+        + explosionesEnergia.length
+        + powerUps.length
+        + obstaculos.length;
 
 
     const lineas = [
@@ -7970,6 +10607,12 @@ function dibujarPanelDebug() {
 
         "ENEMIGOS: "
         + enemigos.length,
+
+        "OBSTACULOS: "
+        + obstaculos.length,
+
+        "POWER-UPS: "
+        + powerUps.length,
 
         "PROYECTILES ADO: "
         + proyectiles.length,
@@ -8210,6 +10853,8 @@ if (
 
         revisarColisiones();
 
+        actualizarPowerUps();
+
         moverParticulas();
 
 
@@ -8263,6 +10908,20 @@ if (
     }
 
 
+    // Las ondas de área se dibujan primero.
+    // Después los obstáculos quedan encima y funcionan
+    // visualmente como cobertura.
+    dibujarExplosionesEnergia(tiempo);
+
+    // Habilidad especial de Ado.
+    dibujarPulsoHexa();
+
+    // Obstáculos forman parte del escenario.
+    dibujarObstaculos();
+
+    // Los objetos recolectables quedan debajo de los personajes.
+    dibujarPowerUps();
+
     dibujarEnemigos();
 
     dibujarJugador(tiempo);
@@ -8271,8 +10930,6 @@ if (
 
     dibujarProyectilesEnemigos();
 
-    dibujarExplosionesEnergia(tiempo);
-
     dibujarParticulas();
 
     dibujarMensajeOleada(tiempo);
@@ -8280,6 +10937,10 @@ if (
     dibujarArmaActual(tiempo);
 
     dibujarBarraHiveLord();
+
+    dibujarEstadoPulsoHexa();
+
+    dibujarEstadoPowerUps();
 
     // DEBUG siempre se dibuja al final para quedar por encima
     // de sprites, partículas y proyectiles.
